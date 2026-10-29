@@ -10,9 +10,12 @@ import { Workbench } from './Workbench';
 const panels = () => screen.getAllByTestId('workbench-panel');
 const titles = () => screen.getAllByTestId('panel-title').map(t => t.textContent);
 
+// 테스트가 바꾼 빌더를 원래 등록된 것으로 되돌린다
+const ORIGINAL = { ...CHART_BUILDERS };
 afterEach(() => {
-  delete CHART_BUILDERS.scatter;
-  delete CHART_BUILDERS.histogram;
+  for (const k of ['scatter', 'histogram'] as const) {
+    if (ORIGINAL[k]) CHART_BUILDERS[k] = ORIGINAL[k]; else delete CHART_BUILDERS[k];
+  }
 });
 
 describe('Workbench', () => {
@@ -20,7 +23,7 @@ describe('Workbench', () => {
     renderWith(<Workbench fmuId={MOCK_FMU_ID} filter={{}} />);
     await waitFor(() => expect(titles()).toEqual(['산점도', '평행좌표', '시계열 subplot', '상관 히트맵']));
     await waitFor(() => expect(screen.getAllByTestId('panel-empty')).toHaveLength(4));
-    expect(screen.getAllByTestId('panel-empty')[0]).toHaveTextContent('준비 중');
+    expect(screen.getAllByTestId('panel-empty')[2]).toHaveTextContent('준비 중');   // 시계열 subplot만 아직 빌더가 없다
   });
 
   test('패널 추가 메뉴로 히스토그램 추가, 삭제', async () => {
@@ -49,7 +52,7 @@ describe('Workbench', () => {
       name: '남의 대시보드', kind: 'dashboard', sourceFmuId: 'other-fmu', config: {
         layout: '1x2', syncTimeZoom: false, panels: [
           { id: 'a', title: '남의 시계열', chart: 'tsSubplots', vars: ['other.speed', 'other.torque'] },
-          { id: 'b', title: '멀쩡한 패널', chart: 'radar' },
+          { id: 'b', title: '멀쩡한 패널', chart: 'contour' },
           { id: 'c', title: 'broken', chart: 'nope' },
         ],
       },
