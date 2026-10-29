@@ -5,14 +5,22 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
-import type { Algorithm, DesignVar, Direction } from '../api/types';
+import type { Algorithm, DesignVar, Direction, OptResource } from '../api/types';
 import { ObjectivePicker } from '../components/ObjectivePicker';
+import {
+  OptResourceSection, hasSearch, optResourcesForRequest, searchInvalid, useResources,
+} from '../components/ResourceGroupSection';
 import { RunSettingsSection, useRunSettings } from '../components/RunSettingsSection';
 import { VariablePicker } from '../components/VariablePicker';
 import { defaultBounds } from '../lib/sweep';
 
-const SINGLE_ALGOS = [{ value: 'tpe', label: 'TPE' }, { value: 'cmaes', label: 'CMA-ES' }, { value: 'random', label: 'Random' }];
-const MULTI_ALGOS = [{ value: 'nsga2', label: 'NSGA-II' }, { value: 'tpe', label: 'TPE' }, { value: 'random', label: 'Random' }];
+const CMAES_SEARCH_NOTE = 'CMA-ES는 파일 탐색(선택형 변수)을 지원하지 않습니다';
+
+function algorithms(multi: boolean, gpAvailable: boolean, search: boolean) {
+  const gp = { value: 'gp', label: gpAvailable ? 'GP' : 'GP (torch 설치 필요)', disabled: !gpAvailable };
+  if (multi) return [{ value: 'nsga2', label: 'NSGA-II' }, { value: 'tpe', label: 'TPE' }, gp, { value: 'random', label: 'Random' }];
+  return [{ value: 'tpe', label: 'TPE' }, gp, { value: 'cmaes', label: 'CMA-ES', disabled: search }, { value: 'random', label: 'Random' }];
+}
 const BOUNDS_ERROR = '최솟값은 최댓값보다 작아야 합니다';
 
 export function OptimizationSetupPage() {
@@ -29,6 +37,10 @@ export function OptimizationSetupPage() {
   const [algorithm, setAlgorithm] = useState<Algorithm>('tpe');
   const [algoNote, setAlgoNote] = useState<string | null>(null);
   const [nTrials, setNTrials] = useState(50);
+  const [resourceSel, setResourceSel] = useState<Record<string, OptResource>>({});
+  const resourceFiles = useResources(fmuId);
+  const health = useQuery({ queryKey: ['health'], queryFn: () => api.health() });
+  const search = hasSearch(resourceSel);
 
   const multi = objectiveIds.length > 1;
   useEffect(() => {
@@ -41,16 +53,26 @@ export function OptimizationSetupPage() {
     }
   }, [multi]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    // 파일 탐색(선택형 변수)이 생기면 CMA-ES는 쓸 수 없다
+    if (search && algorithm === 'cmaes') {
+      setAlgorithm('tpe');
+      setAlgoNote(CMAES_SEARCH_NOTE);
+    }
+  }, [search, algorithm]);
+
   const badBounds = vars.some(v => !(v.min < v.max));
   const submit = useMutation({
     mutationFn: () => api.createOptimization({
       name, fmuId, designVars: vars, algorithm, nTrials,
       objectives: objectiveIds.map(id => ({ objectiveId: id, direction: directions[id] ?? 'minimize' })),
       ...settings!,
+      resources: optResourcesForRequest(resourceFiles.data ?? [], resourceSel),
     }),
     onSuccess: job => navigate(`/jobs/${job.id}`),
   });
-  const canSubmit = !!settings && vars.length > 0 && objectiveIds.length > 0 && !badBounds && !fixedError && !submit.isPending;
+  const canSubmit = !!settings && vars.length > 0 && objectiveIds.length > 0 && !badBounds && !fixedError
+    && !searchInvalid(resourceSel) && !submit.isPending;
   const update = (i: number, patch: Partial<DesignVar>) => setVars(vs => vs.map((v, k) => (k === i ? { ...v, ...patch } : v)));
 
   const addVar = async (names: string[]) => {
@@ -80,11 +102,12 @@ export function OptimizationSetupPage() {
       <Card withBorder>
         <Title order={4} mb="sm">알고리즘</Title>
         <Group align="end">
-          <SegmentedControl value={algorithm} data={multi ? MULTI_ALGOS : SINGLE_ALGOS}
+          <SegmentedControl value={algorithm} data={algorithms(multi, !!health.data?.gpAvailable, search)}
             onChange={v => { setAlgorithm(v as Algorithm); setAlgoNote(null); }} />
           <NumberInput label="trial 수" min={1} value={nTrials} onChange={v => setNTrials(Math.max(1, Number(v) || 1))} w={140} />
         </Group>
         {algoNote && <Text size="sm" c="orange" mt="xs">{algoNote}</Text>}
+        {search && !algoNote && !multi && <Text size="xs" c="dimmed" mt="xs">{CMAES_SEARCH_NOTE}</Text>}
       </Card>
 
       <Card withBorder>
@@ -115,6 +138,11 @@ export function OptimizationSetupPage() {
         </Table>
         <Text size="sm" fw={500} mt="md" mb="xs">설계 변수 추가</Text>
         <VariablePicker fmuId={fmuId} causality="parameter" mode="single" value={vars.map(v => v.name)} onChange={addVar} pageSize={50} />
+      </Card>
+
+      <Card withBorder>
+        <Title order={4} mb="sm">Resource 파일</Title>
+        <OptResourceSection fmuId={fmuId} value={resourceSel} onChange={setResourceSel} />
       </Card>
 
       {settings && (
