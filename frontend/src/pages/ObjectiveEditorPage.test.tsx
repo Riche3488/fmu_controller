@@ -93,14 +93,26 @@ describe('ObjectiveEditorPage', () => {
     expect(await screen.findByText('같은 이름의 목적함수가 이미 있습니다')).toBeInTheDocument();
   });
 
-  test('new objective starts from the template', async () => {
+  test('new objective with 빈 코드로 시작 uses the template', async () => {
     const { client } = await setup();
     renderApp({ route: '/objectives', client });
     await userEvent.click(await screen.findByRole('button', { name: '새 목적함수' }));
     await userEvent.type(await screen.findByLabelText('이름'), 'duration');
-    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await userEvent.click(screen.getByRole('button', { name: '빈 코드로 시작' }));
     await waitFor(async () => expect((await client.listObjectives()).map(o => o.name)).toContain('duration'));
     const editor = (await screen.findByLabelText('코드')) as HTMLTextAreaElement;
     expect(editor.value).toContain('def evaluate(result: pd.DataFrame, params: dict) -> float:');
+  });
+
+  test('new objective defaults to a builder: FMU select, designer, no TestPanel', async () => {
+    const { client } = await setup();
+    renderApp({ route: '/objectives', client });
+    await userEvent.click(await screen.findByRole('button', { name: '새 목적함수' }));
+    await userEvent.type(await screen.findByLabelText('이름'), 'built');
+    await userEvent.click(screen.getByRole('button', { name: '만들기' }));
+    await waitFor(async () => expect((await client.listObjectives()).map(o => o.name)).toContain('built'));
+    expect(await screen.findByRole('textbox', { name: '미리보기·호환성 기준 FMU' })).toBeInTheDocument();
+    expect(await screen.findByText('생성된 코드')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '테스트할 run' })).not.toBeInTheDocument();
   });
 });

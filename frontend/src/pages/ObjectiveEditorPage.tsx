@@ -9,8 +9,11 @@ import { useApi } from '../api/client';
 import type { ObjectiveTestResult } from '../api/types';
 import TEMPLATE from '../api/mock/fixtures/objective_template.py.txt?raw';
 import { CodeHashBadge } from '../components/CodeHashBadge';
+import { ObjectiveDesigner } from '../components/objective/ObjectiveDesigner';
+import { generateCode, parseBuilderCode } from '../lib/builder/codegen';
+import { DEFAULT_SPEC } from '../lib/builder/spec';
 
-const SAVE_NOTE = '저장하면 모든 결과 화면의 이 목적함수 값이 새 코드로 다시 계산됩니다.';
+export const SAVE_NOTE = '저장하면 모든 결과 화면의 이 목적함수 값이 새 코드로 다시 계산됩니다.';
 
 function CreateModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   const api = useApi();
@@ -18,7 +21,8 @@ function CreateModal({ opened, onClose }: { opened: boolean; onClose: () => void
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const create = useMutation({
-    mutationFn: () => api.createObjective({ name: name.trim(), code: TEMPLATE }),
+    // 기본은 빌더 코드, '빈 코드로 시작'은 예전 템플릿
+    mutationFn: (code: string) => api.createObjective({ name: name.trim(), code }),
     onSuccess: o => {
       qc.invalidateQueries({ queryKey: ['objectives'] });
       setName('');
@@ -32,7 +36,8 @@ function CreateModal({ opened, onClose }: { opened: boolean; onClose: () => void
         <TextInput label="이름" description="이 이름이 지표 이름으로 쓰입니다" value={name} onChange={e => setName(e.currentTarget.value)} />
         {create.isError && <Alert color="red">{(create.error as Error).message}</Alert>}
         <Group justify="end">
-          <Button disabled={!name.trim()} loading={create.isPending} onClick={() => create.mutate()}>만들기</Button>
+          <Button variant="default" disabled={!name.trim()} onClick={() => create.mutate(TEMPLATE)}>빈 코드로 시작</Button>
+          <Button disabled={!name.trim()} loading={create.isPending} onClick={() => create.mutate(generateCode(DEFAULT_SPEC))}>만들기</Button>
         </Group>
       </Stack>
     </Modal>
@@ -96,6 +101,9 @@ export function ObjectiveEditorPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [pendingNav, setPendingNav] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ name: string; code: string } | null>(null);
+  const [pickedFmu, setPickedFmu] = useState<string | null>(null);
+  const fmus = useQuery({ queryKey: ['fmus'], queryFn: () => api.listFmus() });
+  const designerFmu = pickedFmu ?? fmus.data?.[0]?.id ?? null;
 
   const list = useQuery({ queryKey: ['objectives'], queryFn: () => api.listObjectives() });
   const current = useQuery({
@@ -104,6 +112,9 @@ export function ObjectiveEditorPage() {
   useEffect(() => {
     if (current.data) setDraft({ name: current.data.name, code: current.data.code });
   }, [current.data]);
+
+  // 저장된 코드가 빌더 코드인지로 정한다 (편집 중 코드 모드로 바꿔도 화면이 바뀌지 않게)
+  const builderMode = !!current.data && !!parseBuilderCode(current.data.code)?.intact;
 
   const dirty = !!current.data && !!draft && (draft.code !== current.data.code || draft.name !== current.data.name);
 
@@ -155,16 +166,27 @@ export function ObjectiveEditorPage() {
               </Group>
               <Text size="xs" c="dimmed">{SAVE_NOTE}</Text>
               {save.isError && <Alert color="red">{(save.error as Error).message}</Alert>}
-              <Card withBorder p={0}>
-                <Editor height="60vh" language="python" value={draft.code}
-                  onChange={v => setDraft(d => (d ? { ...d, code: v ?? '' } : d))}
-                  onMount={(editor, monaco) => {
-                    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-                      document.querySelector<HTMLButtonElement>('[data-save-objective]')?.click();
-                    });
-                  }}
-                  options={{ minimap: { enabled: false }, fontSize: 13, tabSize: 4 }} />
-              </Card>
+              {builderMode ? (
+                <Stack gap="xs">
+                  <Select label="미리보기·호환성 기준 FMU" value={designerFmu} onChange={setPickedFmu} allowDeselect={false}
+                    data={(fmus.data ?? []).map(f => ({ value: f.id, label: f.modelName || f.fileName }))}
+                    comboboxProps={{ transitionProps: { duration: 0 } }} />
+                  {designerFmu
+                    ? <ObjectiveDesigner key={`${current.data.id}:${designerFmu}`} fmuId={designerFmu} value={draft} onChange={setDraft} />
+                    : <Text c="dimmed" size="sm">등록된 FMU가 없습니다</Text>}
+                </Stack>
+              ) : (
+                <Card withBorder p={0}>
+                  <Editor height="60vh" language="python" value={draft.code}
+                    onChange={v => setDraft(d => (d ? { ...d, code: v ?? '' } : d))}
+                    onMount={(editor, monaco) => {
+                      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+                        document.querySelector<HTMLButtonElement>('[data-save-objective]')?.click();
+                      });
+                    }}
+                    options={{ minimap: { enabled: false }, fontSize: 13, tabSize: 4 }} />
+                </Card>
+              )}
               <button data-save-objective hidden onClick={() => dirty && save.mutate()} />
             </Stack>
           ) : (
@@ -172,7 +194,7 @@ export function ObjectiveEditorPage() {
           )}
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 3 }}>
-          {draft && current.data && <TestPanel code={draft.code} />}
+          {draft && current.data && !builderMode && <TestPanel code={draft.code} />}
         </Grid.Col>
       </Grid>
 
