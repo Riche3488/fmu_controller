@@ -24,6 +24,7 @@ class RunQuery:
     job_ids: list[str] | None = None
     status: str | None = None
     objective_ids: list[str] | None = None
+    variant_ids: list[str] | None = None
     sort_by: str = "index"
     sort_dir: str = "asc"
     offset: int = 0
@@ -71,6 +72,8 @@ def query_runs(session: Session, settings: Settings, evaluator: Evaluator, q: Ru
         stmt = stmt.where(Run.job_id.in_(q.job_ids))
     if q.status:
         stmt = stmt.where(Run.status == q.status)
+    if q.variant_ids:
+        stmt = stmt.where(Run.variant_id.in_(q.variant_ids))
     runs = list(session.scalars(stmt.order_by(Run.job_id, Run.index)))
 
     objective_ids = list(dict.fromkeys(q.objective_ids or []))
@@ -95,5 +98,6 @@ def query_runs(session: Session, settings: Settings, evaluator: Evaluator, q: Ru
         values = evaluate_runs(evaluator, codes, page)
 
     items = [RunRow(id=r.id, job_id=r.job_id, fmu_id=r.fmu_id, index=r.index, params=r.params, status=r.status,
-                    error=r.error, elapsed_sec=r.elapsed_sec, objectives=values.get(r.id, {})) for r in page]
+                    error=r.error, elapsed_sec=r.elapsed_sec, variant_id=r.variant_id,
+                    objectives=values.get(r.id, {})) for r in page]
     return RunPage(total=len(runs), items=items, code_hashes=code_hashes)

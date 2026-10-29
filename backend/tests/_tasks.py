@@ -42,3 +42,23 @@ def fake_sim(task):
         arr[n] = float(sv[n])
     write_result(task.out_path, arr)
     return SimOutcome(ok=True, error=None, elapsed_sec=time.perf_counter() - t0, columns=names)
+
+
+def resource_echo_sim(task):
+    """resources/*.txt 파일 내용(숫자)을 같은 이름의 시계열 컬럼으로 기록 — variant 폴더가 맞는 파일을 담았는지 확인용."""
+    from pathlib import Path
+
+    import numpy as np
+
+    from app.fmu.simulate import SimOutcome
+    from app.results.storage import write_result
+
+    files = sorted((Path(task.extract_dir) / "resources").glob("*.txt"))
+    names = ["time", *(f.stem for f in files), *sorted(task.start_values)]
+    arr = np.zeros(3, dtype=[(n, "f8") for n in names])
+    for f in files:
+        arr[f.stem] = float(f.read_text().strip())
+    for k, v in task.start_values.items():
+        arr[k] = float(v)
+    write_result(task.out_path, arr)
+    return SimOutcome(ok=True, error=None, elapsed_sec=0.0, columns=names)

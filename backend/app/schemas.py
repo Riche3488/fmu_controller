@@ -133,6 +133,8 @@ class BatchRequest(RunSettingsBase):
     params: list[SweepParam] = Field(min_length=1)
     sampling: Literal["grid", "zip", "lhs", "random"]
     n_samples: int | None = Field(default=None, ge=1)
+    # resource path -> 후보 id 목록 (파라미터 케이스와 직곱)
+    resources: dict[str, list[str]] = {}
 
 
 class JobOut(CamelModel):
@@ -160,6 +162,7 @@ class RunOut(CamelModel):
     status: Literal["ok", "failed"]
     error: str | None
     elapsed_sec: float
+    variant_id: str
 
 
 class RunRow(RunOut):

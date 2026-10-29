@@ -56,6 +56,7 @@ async def list_runs(
     job_ids: str | None = Query(None, alias="jobIds"),
     status: str | None = None,
     objective_ids: str | None = Query(None, alias="objectiveIds"),
+    variant_ids: str | None = Query(None, alias="variantIds"),
     sort_by: str = Query("index", alias="sortBy"),
     sort_dir: str = Query("asc", alias="sortDir", pattern="^(asc|desc)$"),
     offset: int = Query(0, ge=0),
@@ -63,7 +64,7 @@ async def list_runs(
     session: Session = Depends(get_session),
 ):
     q = RunQuery(fmu_id=fmu_id, job_ids=split_csv(job_ids) or None, status=status,
-                 objective_ids=split_csv(objective_ids) or None, sort_by=sort_by, sort_dir=sort_dir,
+                 objective_ids=split_csv(objective_ids) or None, variant_ids=split_csv(variant_ids) or None, sort_by=sort_by, sort_dir=sort_dir,
                  offset=offset, limit=limit)
     st = request.app.state
     try:

@@ -1,6 +1,7 @@
 """JobManager: 잡마다 백그라운드 스레드 하나가 ParallelExecutor로 run들을 병렬 실행하고 진행 이벤트를 발행한다.
 배치 잡은 목적함수를 계산하지 않는다 (값은 조회 시 최신 코드로 계산)."""
 import asyncio
+import itertools
 import logging
 import shutil
 import threading
@@ -16,11 +17,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from ..config import Settings
 from ..fmu.registry import get_extract_dir
 from ..fmu.simulate import SimOutcome, SimTask, run_simulation
-from ..models import Fmu, Job, Run, Variable, utcnow
+from ..models import Fmu, Job, ResourceFile, Run, Variable, Variant, utcnow
 from ..objectives.evaluator import Evaluator
 from ..parallel.base import ParallelExecutor, TaskCancelled
 from ..models import Objective
 from ..objectives import store
+from ..resources import variants
 from ..schemas import BatchRequest, JobOut, OptimizationRequest, RunOut, SimSettings
 from .optimize import Optimization
 from .sampling import generate_cases
@@ -65,6 +67,7 @@ def new_id() -> str:
 class CaseSpec:
     index: int
     params: dict[str, Any]
+    variant_id: str | None = None  # None = 원본 variant
 
 
 @dataclass
@@ -132,6 +135,21 @@ class JobManager:
         return fmu
 
     @staticmethod
+    def _resolve_resources(session: Session, fmu_id: str, sel: dict[str, list[str]]) -> list[str]:
+        """resource 선택(path -> 후보 id 목록)의 직곱(path 정렬 순)을 variant id 목록으로. 선택이 없으면 원본 하나."""
+        paths = sorted(sel)
+        for path in paths:
+            if not sel[path]:
+                raise JobValidationError(f"resource 후보를 하나 이상 고르세요: {path}")
+            if not session.get(ResourceFile, (fmu_id, path)):
+                raise JobValidationError(f"resource 파일이 없습니다: {path}")
+        try:
+            return [variants.ensure_variant(session, fmu_id, dict(zip(paths, combo))).id
+                    for combo in itertools.product(*(sel[p] for p in paths))]
+        except variants.InvalidAssignment as e:
+            raise JobValidationError(str(e)) from e
+
+    @staticmethod
     def _validate_sim(sim: SimSettings) -> None:
         if not sim.stop_time > sim.start_time:
             raise JobValidationError("종료 시간은 시작 시간보다 커야 합니다")
@@ -147,11 +165,15 @@ class JobManager:
         self._validate_sim(req.sim)
         with self.session_factory() as s:
             self._validate_common(s, req.fmu_id, [p.name for p in req.params] + list(req.fixed_params), req.record_variables)
-            job = Job(id=new_id(), kind="batch", name=req.name, fmu_id=req.fmu_id, status="queued", total=len(cases),
+            variant_ids = self._resolve_resources(s, req.fmu_id, req.resources)
+            job = Job(id=new_id(), kind="batch", name=req.name, fmu_id=req.fmu_id, status="queued",
+                      total=len(cases) * len(variant_ids),
                       config=req.model_dump(mode="json", by_alias=True), objective_snapshot=None)
             s.add(job)
             s.commit()
-        specs = iter([CaseSpec(i, {**req.fixed_params, **c}) for i, c in enumerate(cases)])
+        # 파라미터 케이스(바깥) × resource 조합(안쪽)
+        specs = iter([CaseSpec(i, {**req.fixed_params, **c}, vid)
+                      for i, (c, vid) in enumerate(itertools.product(cases, variant_ids))])
         self._start(job, lambda: self._run_cases(job.id, req.fmu_id, req, specs))
         return job
 
@@ -229,6 +251,7 @@ class JobManager:
         ok = out is not None and out.ok
         with self.session_factory() as s:
             run = Run(id=run_id, job_id=job_id, fmu_id=fmu_id, index=case.index, params=case.params,
+                      variant_id=case.variant_id or variants.original_variant_id(fmu_id),
                       status="ok" if ok else "failed", error=None if ok else (error or (out.error if out else None)),
                       elapsed_sec=out.elapsed_sec if out else 0.0, result_path=out_path if ok else None)
             s.add(run)
@@ -249,7 +272,17 @@ class JobManager:
         모든 잡이 공유하는 슬롯(_slots)을 얻은 뒤에만 제출하므로 제출 시각 ≈ 시작 시각이다
         (큐 대기 시간이 run 타임아웃에 포함되지 않는다)."""
         ctx = self._jobs[job_id]
-        extract_dir = str(get_extract_dir(self.settings, fmu_id))
+        variant_dirs: dict[str | None, str] = {None: str(get_extract_dir(self.settings, fmu_id))}
+
+        def variant_dir(vid: str | None) -> str:
+            """variant 실행 폴더 (잡 스레드에서 처음 쓸 때 만든다)"""
+            if vid not in variant_dirs:
+                with self.session_factory() as s:
+                    v = s.get(Variant, vid)
+                    if v is None:
+                        raise RuntimeError(f"variant를 찾을 수 없습니다: {vid}")
+                    variant_dirs[vid] = str(variants.materialize(self.settings, s, v))
+            return variant_dirs[vid]
         results_dir = self.settings.data_dir / "results" / job_id
         limit = max(1, min(req.workers, self.executor.max_workers))
         inflight: dict[Any, _Inflight] = {}
@@ -258,7 +291,7 @@ class JobManager:
 
         def submit(case: CaseSpec) -> None:
             run_id = new_id()
-            task = SimTask(fmu_id=fmu_id, extract_dir=extract_dir, start_values=case.params, sim=req.sim,
+            task = SimTask(fmu_id=fmu_id, extract_dir=variant_dir(case.variant_id), start_values=case.params, sim=req.sim,
                            record_variables=list(req.record_variables), out_path=str(results_dir / f"{run_id}.parquet"),
                            work_dir=str(self.settings.data_dir / "work" / run_id))
             inflight[self.executor.submit(self.sim_fn, task)] = _Inflight(case, run_id, time.monotonic())
