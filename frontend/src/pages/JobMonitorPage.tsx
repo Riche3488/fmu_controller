@@ -5,8 +5,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
 import type { Direction, Job, OptimizationRequest, RunRow } from '../api/types';
+import { BestTrialCard } from '../components/BestTrialCard';
+import { CandidateBarChart } from '../components/CandidateBarChart';
 import { JobStatusBadge } from '../components/JobStatusBadge';
 import { ObjectivePicker } from '../components/ObjectivePicker';
+import { useResources } from '../components/ResourceGroupSection';
 import { RunTable, type Sort } from '../components/RunTable';
 import { ScatterChart } from '../components/ScatterChart';
 import { StaleSnapshotAlert } from '../components/StaleSnapshotAlert';
@@ -75,6 +78,7 @@ export function JobMonitorPage() {
   const [sort, setSort] = useState<Sort>({ by: 'index', dir: 'asc' });
   const [selected, setSelected] = useState<string[]>([]);
   const [tsVars, setTsVars] = useState<string[] | null>(null);
+  const [barObjective, setBarObjective] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 실시간 이벤트: 잡 상태는 바로 반영, run 목록은 디바운스 후 재조회
@@ -83,7 +87,10 @@ export function JobMonitorPage() {
       if (e.type === 'progress' || e.type === 'end') qc.setQueryData<Job>(['job', jobId], e.job);
       if (e.type === 'run' || e.type === 'end') {
         if (refreshTimer.current) clearTimeout(refreshTimer.current);
-        refreshTimer.current = setTimeout(() => qc.invalidateQueries({ queryKey: ['runs', 'job', jobId] }), e.type === 'end' ? 0 : REFRESH_DEBOUNCE_MS);
+        refreshTimer.current = setTimeout(() => {
+          qc.invalidateQueries({ queryKey: ['runs', 'job', jobId] });
+          qc.invalidateQueries({ queryKey: ['variants'] });
+        }, e.type === 'end' ? 0 : REFRESH_DEBOUNCE_MS);
       }
     });
     return () => {
@@ -105,6 +112,9 @@ export function JobMonitorPage() {
     queryFn: () => api.listRuns({ jobIds: [jobId], objectiveIds, sortBy: sort.by, sortDir: sort.dir, limit: 10000 }),
     enabled: !!j && objectivesList.isSuccess,
   });
+  const fmuId = j?.fmuId ?? '';
+  const variants = useQuery({ queryKey: ['variants', fmuId], queryFn: () => api.listVariants(fmuId), enabled: !!fmuId });
+  const resourceFiles = useResources(fmuId);
   const cancel = useMutation({ mutationFn: () => api.cancelJob(jobId), onSuccess: d => qc.setQueryData(['job', jobId], d) });
 
   const paramNames = useMemo(() => {
@@ -119,6 +129,15 @@ export function JobMonitorPage() {
   const vars = tsVars ?? j.config.recordVariables.slice(0, 1);
   const toggle = (id: string) => setSelected(s => (s.includes(id) ? s.filter(x => x !== id) : s.length >= 10 ? s : [...s, id]));
   const runLabel = (id: string) => `#${rows.find(r => r.id === id)?.index ?? '?'}`;
+  const variantList = variants.data ?? [];
+  const configResources = (j.config as { resources?: Record<string, unknown> }).resources ?? {};
+  const showVariants = Object.keys(configResources).length > 0 || variantList.length > 1;
+  const variantLabel = (id: string) => variantList.find(v => v.id === id)?.label ?? id.slice(0, 8);
+  const searchFiles = optConfig
+    ? (resourceFiles.data ?? []).filter(f => optConfig.resources?.[f.path]?.mode === 'search')
+    : [];
+  const barObjectiveId = barObjective && objectiveIds.includes(barObjective) ? barObjective : objectiveIds[0];
+  const barDirection = optConfig?.objectives.find(o => o.objectiveId === barObjectiveId)?.direction ?? 'minimize';
 
   return (
     <Stack>
@@ -154,6 +173,28 @@ export function JobMonitorPage() {
           <ConvergenceChart rows={rows} objectiveId={objectiveMeta[0].id} direction={optConfig.objectives[0].direction} />
         </Card>
       )}
+      {optConfig && objectiveMeta.length === 1 && (
+        <BestTrialCard rows={rows} objective={objectiveMeta[0]} direction={optConfig.objectives[0].direction}
+          paramNames={paramNames} variantLabel={variantLabel} />
+      )}
+      {optConfig && searchFiles.length > 0 && barObjectiveId && (
+        <Card withBorder>
+          <Group mb="xs">
+            <Text size="sm" fw={500}>후보별 목적함수 (성공 trial)</Text>
+            {objectiveMeta.length > 1 && (
+              <Select aria-label="막대 기준 목적함수" size="xs" value={barObjectiveId} allowDeselect={false}
+                data={objectiveMeta.map(o => ({ value: o.id, label: o.name }))} onChange={setBarObjective}
+                comboboxProps={{ transitionProps: { duration: 0 } }} />
+            )}
+          </Group>
+          {searchFiles.map(f => (
+            <div key={f.path}>
+              <Text size="xs" ff="monospace" c="dimmed">{f.path}</Text>
+              <CandidateBarChart rows={rows} variants={variantList} file={f} objectiveId={barObjectiveId} direction={barDirection} />
+            </div>
+          ))}
+        </Card>
+      )}
       {optConfig && objectiveMeta.length >= 2 && (
         <Card withBorder>
           <ParetoView rows={rows} objectives={objectiveMeta} selected={selected} onPick={toggle}
@@ -163,7 +204,7 @@ export function JobMonitorPage() {
 
       {runs.isError && <Alert color="red">{(runs.error as Error).message}</Alert>}
       <RunTable rows={rows} paramNames={paramNames} objectives={objectiveMeta} codeHashes={runs.data?.codeHashes ?? {}}
-        sort={sort} onSort={setSort} selected={selected} onToggle={toggle} />
+        sort={sort} onSort={setSort} selected={selected} onToggle={toggle} variantLabel={showVariants ? variantLabel : undefined} />
 
       <Card withBorder>
         <Group mb="xs">

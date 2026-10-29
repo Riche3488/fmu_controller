@@ -26,7 +26,7 @@ function SortHeader({ label, by, sort, onSort, children }: {
 }
 
 /** run 표: 파라미터 + (선택된) 목적함수 값 + 상태. 헤더 클릭으로 서버 정렬. */
-export function RunTable({ rows, paramNames, objectives, codeHashes, sort, onSort, selected, onToggle, maxSelected = 10, showJob }: {
+export function RunTable({ rows, paramNames, objectives, codeHashes, sort, onSort, selected, onToggle, maxSelected = 10, showJob, variantLabel }: {
   rows: RunRow[];
   paramNames: string[];
   objectives: { id: string; name: string }[];
@@ -37,6 +37,8 @@ export function RunTable({ rows, paramNames, objectives, codeHashes, sort, onSor
   onToggle: (id: string) => void;
   maxSelected?: number;
   showJob?: (jobId: string) => string;
+  /** 있으면 'Resource 조합' 열을 보여 준다 */
+  variantLabel?: (variantId: string) => string;
 }) {
   return (
     <Table.ScrollContainer minWidth={700} mah={480}>
@@ -47,6 +49,7 @@ export function RunTable({ rows, paramNames, objectives, codeHashes, sort, onSor
             {showJob && <Table.Th>잡</Table.Th>}
             <SortHeader label="#" by="index" sort={sort} onSort={onSort} />
             <Table.Th>상태</Table.Th>
+            {variantLabel && <Table.Th>Resource 조합</Table.Th>}
             {paramNames.map(p => <SortHeader key={p} label={p} by={`param:${p}`} sort={sort} onSort={onSort} />)}
             {objectives.map(o => (
               <SortHeader key={o.id} label={o.name} by={`objective:${o.id}`} sort={sort} onSort={onSort}>
@@ -72,6 +75,7 @@ export function RunTable({ rows, paramNames, objectives, codeHashes, sort, onSor
                     <Tooltip label={r.error ?? ''} multiline w={320}><Badge size="xs" color="red" variant="light">failed</Badge></Tooltip>
                   )}
                 </Table.Td>
+                {variantLabel && <Table.Td>{variantLabel(r.variantId)}</Table.Td>}
                 {paramNames.map(p => <Table.Td key={p}>{fmt(r.params[p])}</Table.Td>)}
                 {objectives.map(o => {
                   const v = r.objectives[o.id];

@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '../test/render';
-import { createMockClient, MOCK_FMU_ID } from '../api/mock/mockClient';
+import { createMockClient, MOCK_FMU_ID, MOCK_NEDC_PATH } from '../api/mock/mockClient';
 import { batchReq, SIM } from '../test/fixtures';
 import type { OptimizationRequest } from '../api/types';
 
@@ -120,4 +120,49 @@ describe('JobListPage', () => {
     await userEvent.click(within(row).getByText('sweep-1'));
     expect(await screen.findByRole('heading', { level: 2, name: /sweep-1/ })).toBeInTheDocument();
   });
+
+  test('batch with resources shows the resource column', async () => {
+    const client = createMockClient({ tickMs: 5 });
+    const cand = await client.uploadCandidate(MOCK_FMU_ID, MOCK_NEDC_PATH, new File(['k'], 'nedc_x0.8.mat'));
+    const orig = (await client.listResources(MOCK_FMU_ID)).find(r => r.path === MOCK_NEDC_PATH)!.candidates[0];
+    const job = await client.createBatch(batchReq({ resources: { [MOCK_NEDC_PATH]: [orig.id, cand.id] } }));
+    renderApp({ route: `/jobs/${job.id}`, client });
+    await waitFor(() => expect(screen.getAllByTestId('run-row')).toHaveLength(6), { timeout: 3000 });
+    expect(screen.getByRole('columnheader', { name: 'Resource 조합' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText('NEDC.mat=nedc_x0.8.mat')).toHaveLength(3));
+    expect(screen.getAllByText('원본')).toHaveLength(3);
+  });
+
+  test('single-objective optimization shows best trial with its resource combo', async () => {
+    const client = createMockClient({ tickMs: 5 });
+    const obj = await client.createObjective({ name: 'fuel', code: 'def evaluate(r, p):\n    return 1.0' });
+    const cand = await client.uploadCandidate(MOCK_FMU_ID, MOCK_NEDC_PATH, new File(['k'], 'k.mat'));
+    const job = await client.createOptimization({
+      ...optReq([{ objectiveId: obj.id, direction: 'minimize' }], 8),
+      resources: { [MOCK_NEDC_PATH]: { mode: 'fixed', candidateId: cand.id } },
+    });
+    renderApp({ route: `/jobs/${job.id}`, client });
+    const card = await screen.findByTestId('best-trial', {}, { timeout: 3000 });
+    await waitFor(() => expect(within(card).getByText('NEDC.mat=k.mat')).toBeInTheDocument(), { timeout: 3000 });
+    expect(within(card).getByText(/fuel/)).toBeInTheDocument();
+  });
+
+  test('search-mode resource shows per-candidate bars', async () => {
+    const client = createMockClient({ tickMs: 5 });
+    const obj = await client.createObjective({ name: 'fuel', code: 'def evaluate(r, p):\n    return 1.0' });
+    const cand = await client.uploadCandidate(MOCK_FMU_ID, MOCK_NEDC_PATH, new File(['k'], 'k.mat'));
+    const orig = (await client.listResources(MOCK_FMU_ID)).find(r => r.path === MOCK_NEDC_PATH)!.candidates[0];
+    const job = await client.createOptimization({
+      ...optReq([{ objectiveId: obj.id, direction: 'minimize' }], 12),
+      resources: { [MOCK_NEDC_PATH]: { mode: 'search', candidateIds: [orig.id, cand.id] } },
+    });
+    renderApp({ route: `/jobs/${job.id}`, client });
+    await waitFor(() => {
+      const opt = chartOption(`candidate-bar-${MOCK_NEDC_PATH}`);
+      expect(opt.xAxis.data).toEqual(['NEDC.mat (원본)', 'k.mat']);
+      expect(opt.series.map((x: { name: string }) => x.name)).toEqual(['평균', '최적']);
+      expect(opt.series[0].data.filter((v: number | null) => v !== null).length).toBeGreaterThan(0);
+    }, { timeout: 3000 });
+  });
 });
+
