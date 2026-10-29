@@ -1,0 +1,36 @@
+// 도메인별 mock/http 선택. VITE_API_<DOMAIN>=mock|http (기본 mock)
+import type { ApiClient } from './client';
+import { createMockClient } from './mock/mockClient';
+
+export type Domain = 'FMUS' | 'OBJECTIVES' | 'JOBS' | 'RUNS';
+
+type Method = keyof ApiClient;
+
+const DOMAIN_METHODS: Record<Domain, Method[]> = {
+  FMUS: ['health', 'listFmus', 'uploadFmu', 'getFmu', 'deleteFmu', 'listVariables'],
+  OBJECTIVES: ['listObjectives', 'getObjective', 'createObjective', 'updateObjective', 'deleteObjective', 'testObjective'],
+  JOBS: ['createBatch', 'createOptimization', 'listJobs', 'getJob', 'cancelJob', 'subscribeJob'],
+  RUNS: ['listRuns', 'getTimeseries'],
+};
+
+export function composeClient(
+  modes: Partial<Record<Domain, 'mock' | 'http'>>,
+  impls: { mock: ApiClient; http?: ApiClient },
+): ApiClient {
+  const out: Partial<Record<Method, unknown>> = {};
+  for (const [domain, methods] of Object.entries(DOMAIN_METHODS) as [Domain, Method[]][]) {
+    const mode = modes[domain] ?? 'mock';
+    const impl = mode === 'http' ? impls.http : impls.mock;
+    if (!impl) throw new Error(`VITE_API_${domain}=http 이지만 http 클라이언트가 없습니다`);
+    for (const m of methods) out[m] = (impl[m] as (...a: unknown[]) => unknown).bind(impl);
+  }
+  return out as ApiClient;
+}
+
+export function createClient(): ApiClient {
+  const env = import.meta.env;
+  const modes = Object.fromEntries(
+    (Object.keys(DOMAIN_METHODS) as Domain[]).map(d => [d, env[`VITE_API_${d}`] === 'http' ? 'http' : 'mock']),
+  ) as Record<Domain, 'mock' | 'http'>;
+  return composeClient(modes, { mock: createMockClient() });
+}

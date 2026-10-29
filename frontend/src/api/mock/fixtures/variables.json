@@ -1,0 +1,4402 @@
+[
+ {
+  "name": "road.tableBasedStops",
+  "valueReference": 16777216,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": true,
+  "unit": null,
+  "description": "=true enables the stopping points to be controlled by a table input, else repeating"
+ },
+ {
+  "name": "road.checkStopFormat",
+  "valueReference": 16777217,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": true,
+  "unit": null,
+  "description": "=true checks if stop data in the file is correct following 2020.3 format updating"
+ },
+ {
+  "name": "road.convertStopsFormat",
+  "valueReference": 16777218,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": "=true enables the automatic conversion of the stop data within the file to 2020.3 format"
+ },
+ {
+  "name": "road.stopTable[1,1]",
+  "valueReference": 16777219,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 45.0,
+  "unit": null,
+  "description": "Stop table,column 1 position of stop and column 2 time duration of stop, used if activateStops=true, tableBasedStops=true and stopsOnFile=false"
+ },
+ {
+  "name": "road.stopTable[1,2]",
+  "valueReference": 16777220,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 10.0,
+  "unit": null,
+  "description": "Stop table,column 1 position of stop and column 2 time duration of stop, used if activateStops=true, tableBasedStops=true and stopsOnFile=false"
+ },
+ {
+  "name": "road.stopTable[2,1]",
+  "valueReference": 16777221,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 100.0,
+  "unit": null,
+  "description": "Stop table,column 1 position of stop and column 2 time duration of stop, used if activateStops=true, tableBasedStops=true and stopsOnFile=false"
+ },
+ {
+  "name": "road.stopTable[2,2]",
+  "valueReference": 16777222,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 20.0,
+  "unit": null,
+  "description": "Stop table,column 1 position of stop and column 2 time duration of stop, used if activateStops=true, tableBasedStops=true and stopsOnFile=false"
+ },
+ {
+  "name": "road.stopTable[3,1]",
+  "valueReference": 16777223,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 250.0,
+  "unit": null,
+  "description": "Stop table,column 1 position of stop and column 2 time duration of stop, used if activateStops=true, tableBasedStops=true and stopsOnFile=false"
+ },
+ {
+  "name": "road.stopTable[3,2]",
+  "valueReference": 16777224,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 12.0,
+  "unit": null,
+  "description": "Stop table,column 1 position of stop and column 2 time duration of stop, used if activateStops=true, tableBasedStops=true and stopsOnFile=false"
+ },
+ {
+  "name": "road.stopTable[4,1]",
+  "valueReference": 16777225,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 325.0,
+  "unit": null,
+  "description": "Stop table,column 1 position of stop and column 2 time duration of stop, used if activateStops=true, tableBasedStops=true and stopsOnFile=false"
+ },
+ {
+  "name": "road.stopTable[4,2]",
+  "valueReference": 16777226,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 17.0,
+  "unit": null,
+  "description": "Stop table,column 1 position of stop and column 2 time duration of stop, used if activateStops=true, tableBasedStops=true and stopsOnFile=false"
+ },
+ {
+  "name": "road.firstStop",
+  "valueReference": 16777227,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 500.0,
+  "unit": null,
+  "description": "s position of first stop point"
+ },
+ {
+  "name": "road.stopInterval",
+  "valueReference": 16777228,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 1000.0,
+  "unit": null,
+  "description": "s distance between each stop"
+ },
+ {
+  "name": "road.stopTime",
+  "valueReference": 16777229,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 10.0,
+  "unit": null,
+  "description": "time required to be stationary"
+ },
+ {
+  "name": "road.readConesFromFile",
+  "valueReference": 16777230,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": true,
+  "unit": null,
+  "description": "Enable location of cones read from road file"
+ },
+ {
+  "name": "road.r0Cones[1,1]",
+  "valueReference": 16777231,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[1,2]",
+  "valueReference": 16777232,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[2,1]",
+  "valueReference": 16777233,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 15.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[2,2]",
+  "valueReference": 16777234,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[3,1]",
+  "valueReference": 16777235,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 30.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[3,2]",
+  "valueReference": 16777236,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[4,1]",
+  "valueReference": 16777237,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 45.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[4,2]",
+  "valueReference": 16777238,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[5,1]",
+  "valueReference": 16777239,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 60.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.r0Cones[5,2]",
+  "valueReference": 16777240,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location (road coordinates) of cones {s, w}"
+ },
+ {
+  "name": "road.sMin",
+  "valueReference": 16777241,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Minimum ground coordinate value (don't modify at an experiment level)"
+ },
+ {
+  "name": "road.roadColour[1]",
+  "valueReference": 16777242,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 100,
+  "unit": null,
+  "description": "Colour of road"
+ },
+ {
+  "name": "road.roadColour[2]",
+  "valueReference": 16777243,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 100,
+  "unit": null,
+  "description": "Colour of road"
+ },
+ {
+  "name": "road.roadColour[3]",
+  "valueReference": 16777244,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 100,
+  "unit": null,
+  "description": "Colour of road"
+ },
+ {
+  "name": "road.startPoint",
+  "valueReference": 16777245,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": -10.0,
+  "unit": null,
+  "description": "Start position of road visualisation in ground coordinate s"
+ },
+ {
+  "name": "road.mue",
+  "valueReference": 16777251,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Friction coefficient of road"
+ },
+ {
+  "name": "road.gradient",
+  "valueReference": 16777252,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Gradient of the road (up/along)"
+ },
+ {
+  "name": "road.banking",
+  "valueReference": 16777253,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Banking angle of the road"
+ },
+ {
+  "name": "road.v",
+  "valueReference": 16777254,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 10.0,
+  "unit": null,
+  "description": "Target velocity"
+ },
+ {
+  "name": "road.roadOrigin[1]",
+  "valueReference": 16777255,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location at s=0 and w=0 for flat road in world coordinates"
+ },
+ {
+  "name": "road.roadOrigin[2]",
+  "valueReference": 16777256,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location at s=0 and w=0 for flat road in world coordinates"
+ },
+ {
+  "name": "road.roadOrigin[3]",
+  "valueReference": 16777257,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Location at s=0 and w=0 for flat road in world coordinates"
+ },
+ {
+  "name": "atmosphere.v[1]",
+  "valueReference": 16777258,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wind velocity"
+ },
+ {
+  "name": "atmosphere.v[2]",
+  "valueReference": 16777259,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wind velocity"
+ },
+ {
+  "name": "atmosphere.v[3]",
+  "valueReference": 16777260,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wind velocity"
+ },
+ {
+  "name": "atmosphere.ambientPressure",
+  "valueReference": 16777261,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 101300.0,
+  "unit": null,
+  "description": "Air pressure"
+ },
+ {
+  "name": "atmosphere.T",
+  "valueReference": 16777262,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 293.15,
+  "unit": null,
+  "description": "Air temperature"
+ },
+ {
+  "name": "atmosphere.h",
+  "valueReference": 16777263,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.5,
+  "unit": null,
+  "description": "Air humidity (0-1)"
+ },
+ {
+  "name": "world.g",
+  "valueReference": 16777264,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 9.80665,
+  "unit": null,
+  "description": "Constant gravity acceleration"
+ },
+ {
+  "name": "world.mu",
+  "valueReference": 16777265,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 398600441800000.0,
+  "unit": "m3/s2",
+  "description": "Gravity field constant (default = field constant of earth)"
+ },
+ {
+  "name": "world.gravityArrowTail[1]",
+  "valueReference": 16777266,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of world frame to arrow tail, resolved in world frame"
+ },
+ {
+  "name": "world.gravityArrowTail[2]",
+  "valueReference": 16777267,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of world frame to arrow tail, resolved in world frame"
+ },
+ {
+  "name": "world.gravityArrowTail[3]",
+  "valueReference": 16777268,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of world frame to arrow tail, resolved in world frame"
+ },
+ {
+  "name": "world.gravitySphereDiameter",
+  "valueReference": 16777269,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 12742000.0,
+  "unit": null,
+  "description": "Diameter of sphere representing gravity center (default = mean diameter of earth)"
+ },
+ {
+  "name": "world.groundLength_u",
+  "valueReference": 16777270,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 2.0,
+  "unit": null,
+  "description": "Length of ground plane along groundAxis_u"
+ },
+ {
+  "name": "world.defaultWidthFraction",
+  "valueReference": 16777271,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 20.0,
+  "unit": null,
+  "description": "Default for shape width as a fraction of shape length (e.g., for Parts.FixedTranslation)"
+ },
+ {
+  "name": "world.defaultFrameDiameterFraction",
+  "valueReference": 16777272,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 40.0,
+  "unit": null,
+  "description": "Default for arrow diameter of a coordinate system as a fraction of axis length"
+ },
+ {
+  "name": "world.defaultN_to_m",
+  "valueReference": 16777273,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 1000.0,
+  "unit": "N/m",
+  "description": "Default scaling of force arrows (length = force/defaultN_to_m)"
+ },
+ {
+  "name": "world.defaultNm_to_m",
+  "valueReference": 16777274,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 1000.0,
+  "unit": "N.m/m",
+  "description": "Default scaling of torque arrows (length = torque/defaultNm_to_m)"
+ },
+ {
+  "name": "totalMass.radius",
+  "valueReference": 16777275,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.075,
+  "unit": null,
+  "description": "Radius of the sphere used to animate the cog"
+ },
+ {
+  "name": "totalMass.colour[1]",
+  "valueReference": 16777276,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 255,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "totalMass.colour[2]",
+  "valueReference": 16777277,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "totalMass.colour[3]",
+  "valueReference": 16777278,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "totalMass.fromOrientation[1,1]",
+  "valueReference": 16777279,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "totalMass.fromOrientation[1,2]",
+  "valueReference": 16777280,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "totalMass.fromOrientation[1,3]",
+  "valueReference": 16777281,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "totalMass.fromOrientation[2,1]",
+  "valueReference": 16777282,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "totalMass.fromOrientation[2,2]",
+  "valueReference": 16777283,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "totalMass.fromOrientation[2,3]",
+  "valueReference": 16777284,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "totalMass.fromOrientation[3,1]",
+  "valueReference": 16777285,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "totalMass.fromOrientation[3,2]",
+  "valueReference": 16777286,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "totalMass.fromOrientation[3,3]",
+  "valueReference": 16777287,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Coordinate system for frame_a"
+ },
+ {
+  "name": "simControl.timeStep",
+  "valueReference": 16777288,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Global timeStep variable used in model should be set to the solver timeStep"
+ },
+ {
+  "name": "vehicle.driveline.systemMass.radius",
+  "valueReference": 16777289,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.03,
+  "unit": null,
+  "description": "Radius of the sphere used to animate the cog"
+ },
+ {
+  "name": "vehicle.driveline.systemMass.colour[1]",
+  "valueReference": 16777290,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 255,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "vehicle.driveline.systemMass.colour[2]",
+  "valueReference": 16777291,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 255,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "vehicle.driveline.systemMass.colour[3]",
+  "valueReference": 16777292,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "vehicle.driveline.offset[1]",
+  "valueReference": 16777293,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": -2.8,
+  "unit": null,
+  "description": "Offset of the driveline components away from and resolved in chassisFrame"
+ },
+ {
+  "name": "vehicle.driveline.offset[2]",
+  "valueReference": 16777294,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Offset of the driveline components away from and resolved in chassisFrame"
+ },
+ {
+  "name": "vehicle.driveline.offset[3]",
+  "valueReference": 16777295,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Offset of the driveline components away from and resolved in chassisFrame"
+ },
+ {
+  "name": "vehicle.driveline.rearRightShaft.J",
+  "valueReference": 16777296,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.02,
+  "unit": null,
+  "description": "Moment of inertia"
+ },
+ {
+  "name": "vehicle.driveline.rearLeftShaft.J",
+  "valueReference": 16777297,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.02,
+  "unit": null,
+  "description": "Moment of inertia"
+ },
+ {
+  "name": "vehicle.driveline.rearPropshaft.J",
+  "valueReference": 16777298,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.03,
+  "unit": null,
+  "description": "Moment of inertia"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.finalRatio",
+  "valueReference": 16777299,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 3.0,
+  "unit": null,
+  "description": "Final drive ratio of the differential"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.torqueBias",
+  "valueReference": 16777300,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Torque Bias (outputFlange1/outputFlange2)"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.lossTable[1,1]",
+  "valueReference": 16777301,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Array for mesh efficiencies and bearing friction depending on speed"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.lossTable[1,2]",
+  "valueReference": 16777302,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.98,
+  "unit": null,
+  "description": "Array for mesh efficiencies and bearing friction depending on speed"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.lossTable[1,3]",
+  "valueReference": 16777303,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.98,
+  "unit": null,
+  "description": "Array for mesh efficiencies and bearing friction depending on speed"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.lossTable[1,4]",
+  "valueReference": 16777304,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Array for mesh efficiencies and bearing friction depending on speed"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.lossTable[1,5]",
+  "valueReference": 16777305,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Array for mesh efficiencies and bearing friction depending on speed"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.color[1]",
+  "valueReference": 16777306,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Color of arrow"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.color[2]",
+  "valueReference": 16777307,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 128,
+  "unit": null,
+  "description": "Color of arrow"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.color[3]",
+  "valueReference": 16777308,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Color of arrow"
+ },
+ {
+  "name": "vehicle.driveline.rearDifferential.finalDriveGear.T",
+  "valueReference": 16777310,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 293.15,
+  "unit": null,
+  "description": "Fixed device temperature if useHeatPort = false"
+ },
+ {
+  "name": "vehicle.driverEnvironment.wRedLine",
+  "valueReference": 16777311,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 628.31853071796,
+  "unit": null,
+  "description": "Upper rev limit used for reference when changing gear"
+ },
+ {
+  "name": "vehicle.driverEnvironment.brakePedalConverter.gain",
+  "valueReference": 16777313,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.1,
+  "unit": null,
+  "description": "Gain applied to normalised input to produce a position(m) output"
+ },
+ {
+  "name": "vehicle.driverEnvironment.brakePedalConverter.f_crit",
+  "valueReference": 16777314,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 50.0,
+  "unit": null,
+  "description": "if exact=false, critical frequency of filter to filter input signal"
+ },
+ {
+  "name": "vehicle.driverEnvironment.brakePedalConverter.s_max",
+  "valueReference": 16777315,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1e+60,
+  "unit": null,
+  "description": "Upper limit for position"
+ },
+ {
+  "name": "vehicle.driverEnvironment.steeringConverter.gain",
+  "valueReference": 16777316,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 6.28,
+  "unit": null,
+  "description": "Gain applied to normalised input to produce an angle(rad) output"
+ },
+ {
+  "name": "vehicle.driverEnvironment.steeringConverter.f_crit",
+  "valueReference": 16777317,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 10.0,
+  "unit": null,
+  "description": "if exact=false, critical frequency of filter to filter input signal"
+ },
+ {
+  "name": "vehicle.driverEnvironment.BrakeByWireConverter.gain",
+  "valueReference": 16777318,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.1,
+  "unit": null,
+  "description": "Gain applied to normalised input to gain a real position(m) output"
+ },
+ {
+  "name": "vehicle.driverEnvironment.AcceleratorByWireConverter.gain",
+  "valueReference": 16777319,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.1,
+  "unit": null,
+  "description": "Gain applied to normalised input to gain a real position(m) output"
+ },
+ {
+  "name": "vehicle.driverEnvironment.fixedTranslation.extra",
+  "valueReference": 16777320,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Additional parameter depending on shapeType (see docu of Visualizers.Advanced.Shape)"
+ },
+ {
+  "name": "vehicle.driverEnvironment.handbrakeDemand.deactivationY",
+  "valueReference": 16777321,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Variable that substitutes the input u if deactivate=true"
+ },
+ {
+  "name": "vehicle.driverEnvironment.handbrakeConverter.gain",
+  "valueReference": 16777322,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.1,
+  "unit": null,
+  "description": "Gain applied to normalised input to produce a position(m) output"
+ },
+ {
+  "name": "vehicle.driverEnvironment.handbrakeConverter.f_crit",
+  "valueReference": 16777323,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 50.0,
+  "unit": null,
+  "description": "if exact=false, critical frequency of filter to filter input signal"
+ },
+ {
+  "name": "vehicle.driverEnvironment.handbrakeConverter.s_max",
+  "valueReference": 16777324,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1e+60,
+  "unit": null,
+  "description": "Upper limit for position"
+ },
+ {
+  "name": "vehicle.brakes.systemMass.radius",
+  "valueReference": 16777325,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.03,
+  "unit": null,
+  "description": "Radius of the sphere used to animate the cog"
+ },
+ {
+  "name": "vehicle.brakes.systemMass.colour[1]",
+  "valueReference": 16777326,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 255,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "vehicle.brakes.systemMass.colour[2]",
+  "valueReference": 16777327,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 255,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "vehicle.brakes.systemMass.colour[3]",
+  "valueReference": 16777328,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of the sphere"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.leftWheel",
+  "valueReference": 16777329,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Boolean",
+  "start": true,
+  "unit": null,
+  "description": "Left wheel brake"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.rCaliper[1]",
+  "valueReference": 16777330,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.rCaliper[2]",
+  "valueReference": 16777331,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.rCaliper[3]",
+  "valueReference": 16777332,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.outerDiameter",
+  "valueReference": 16777333,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.25,
+  "unit": null,
+  "description": "Disc usable outer diameter"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.innerDiameter",
+  "valueReference": 16777334,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.15,
+  "unit": null,
+  "description": "Disc usable inner diameter"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.thickness",
+  "valueReference": 16777335,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.012,
+  "unit": null,
+  "description": "Thickness of disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.mDisc",
+  "valueReference": 16777336,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 2.5,
+  "unit": null,
+  "description": "Mass of brake disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.rCM",
+  "valueReference": 16777337,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Distance from midpoint of the brake disc thickness to the centre of mass of along the spin axis relative to wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.IDisc_xx",
+  "valueReference": 16777338,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.1,
+  "unit": null,
+  "description": "Total Moment of inertia around axis of rotation"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.mCaliper",
+  "valueReference": 16777339,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Mass of caliper"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.ICaliper_11",
+  "valueReference": 16777340,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 1,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.ICaliper_22",
+  "valueReference": 16777341,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 2,2 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.ICaliper_33",
+  "valueReference": 16777342,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,3 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.ICaliper_21",
+  "valueReference": 16777343,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 2,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.ICaliper_31",
+  "valueReference": 16777344,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.ICaliper_32",
+  "valueReference": 16777345,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,2 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.n_x[1]",
+  "valueReference": 16777346,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.n_x[2]",
+  "valueReference": 16777347,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.n_x[3]",
+  "valueReference": 16777348,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.n_y[1]",
+  "valueReference": 16777349,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.n_y[2]",
+  "valueReference": 16777350,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.n_y[3]",
+  "valueReference": 16777351,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.DiscSpecificHeat",
+  "valueReference": 16777352,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 440.0,
+  "unit": null,
+  "description": "Specific Heat Capacity of brake disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.T_start",
+  "valueReference": 16777353,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 293.15,
+  "unit": null,
+  "description": "Fixed temperature if no thermal model used or initial temperature"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.torqueReaction.phi0",
+  "valueReference": 16777354,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Fixed offset angle of housing"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.brake.mue",
+  "valueReference": 16777355,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Friction coefficient"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.brake.cgeo",
+  "valueReference": 16777356,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Geometry and clamping factor"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.brake.tau_max",
+  "valueReference": 16777357,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 3750.0,
+  "unit": null,
+  "description": "Maximum torque"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.brake.c",
+  "valueReference": 16777358,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 100000.0,
+  "unit": null,
+  "description": "Contact stiffness"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.brake.d",
+  "valueReference": 16777359,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 10000.0,
+  "unit": null,
+  "description": "Damping in elastic region"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.brake.d_viscous",
+  "valueReference": 16777360,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Viscous friction coefficient"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.shaftLength.r_shape[1]",
+  "valueReference": 16777363,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.shaftLength.r_shape[2]",
+  "valueReference": 16777364,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.shaftLength.r_shape[3]",
+  "valueReference": 16777365,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.usedAsLinearisationState",
+  "valueReference": 16777367,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": null
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.n_x[1]",
+  "valueReference": 16777368,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.n_x[2]",
+  "valueReference": 16777369,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.n_x[3]",
+  "valueReference": 16777370,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.n_y[1]",
+  "valueReference": 16777371,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.n_y[2]",
+  "valueReference": 16777372,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.n_y[3]",
+  "valueReference": 16777373,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.r_shape[1]",
+  "valueReference": 16777374,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.r_shape[2]",
+  "valueReference": 16777375,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.r_shape[3]",
+  "valueReference": 16777376,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.phi_shape[1]",
+  "valueReference": 16777377,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.phi_shape[2]",
+  "valueReference": 16777378,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.phi_shape[3]",
+  "valueReference": 16777379,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.disc.body.extra",
+  "valueReference": 16777380,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Additional animation information"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.rMassOrigin[1]",
+  "valueReference": 16777381,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.rMassOrigin[2]",
+  "valueReference": 16777382,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.rMassOrigin[3]",
+  "valueReference": 16777383,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.r_CM_InLocal",
+  "valueReference": 16777384,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": "=true if r_CM is resolved in local orientation, else r_CM is resolved relative to frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.angles_start[1]",
+  "valueReference": 16777385,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.angles_start[2]",
+  "valueReference": 16777386,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.angles_start[3]",
+  "valueReference": 16777387,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.w_0_start[1]",
+  "valueReference": 16777388,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial or guess values of angular velocity of frame_a resolved in world frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.w_0_start[2]",
+  "valueReference": 16777389,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial or guess values of angular velocity of frame_a resolved in world frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.w_0_start[3]",
+  "valueReference": 16777390,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial or guess values of angular velocity of frame_a resolved in world frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.z_0_start[1]",
+  "valueReference": 16777391,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angular acceleration z_0 = der(w_0)"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.z_0_start[2]",
+  "valueReference": 16777392,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angular acceleration z_0 = der(w_0)"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.z_0_start[3]",
+  "valueReference": 16777393,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angular acceleration z_0 = der(w_0)"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.extra",
+  "valueReference": 16777394,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Additional parameter depending on shapeType (see docu of Visualizers.Advanced.Shape)."
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.sphereDiameter",
+  "valueReference": 16777395,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.05,
+  "unit": null,
+  "description": "Diameter of sphere"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.animateInertia",
+  "valueReference": 16777396,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": "Visualise the position and orientation of the inertia matrix"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.lengthInertiaFrame",
+  "valueReference": 16777397,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.5,
+  "unit": null,
+  "description": "Length of axes arrows for inertia matrix frame visualiser"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.colourInertia[1]",
+  "valueReference": 16777398,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of inertia frame visualiser"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.colourInertia[2]",
+  "valueReference": 16777399,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of inertia frame visualiser"
+ },
+ {
+  "name": "vehicle.brakes.brake_1.caliper.colourInertia[3]",
+  "valueReference": 16777400,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of inertia frame visualiser"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.leftWheel",
+  "valueReference": 16777403,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": "Left wheel brake"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.rCaliper[1]",
+  "valueReference": 16777404,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.rCaliper[2]",
+  "valueReference": 16777405,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.rCaliper[3]",
+  "valueReference": 16777406,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.outerDiameter",
+  "valueReference": 16777407,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.25,
+  "unit": null,
+  "description": "Disc usable outer diameter"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.innerDiameter",
+  "valueReference": 16777408,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.15,
+  "unit": null,
+  "description": "Disc usable inner diameter"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.thickness",
+  "valueReference": 16777409,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.012,
+  "unit": null,
+  "description": "Thickness of disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.mDisc",
+  "valueReference": 16777410,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 2.5,
+  "unit": null,
+  "description": "Mass of brake disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.rCM",
+  "valueReference": 16777411,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Distance from midpoint of the brake disc thickness to the centre of mass of along the spin axis relative to wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.IDisc_xx",
+  "valueReference": 16777412,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.1,
+  "unit": null,
+  "description": "Total Moment of inertia around axis of rotation"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.mCaliper",
+  "valueReference": 16777413,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Mass of caliper"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.ICaliper_11",
+  "valueReference": 16777414,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 1,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.ICaliper_22",
+  "valueReference": 16777415,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 2,2 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.ICaliper_33",
+  "valueReference": 16777416,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,3 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.ICaliper_21",
+  "valueReference": 16777417,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 2,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.ICaliper_31",
+  "valueReference": 16777418,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.ICaliper_32",
+  "valueReference": 16777419,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,2 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.n_x[1]",
+  "valueReference": 16777420,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.n_x[2]",
+  "valueReference": 16777421,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.n_x[3]",
+  "valueReference": 16777422,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.n_y[1]",
+  "valueReference": 16777423,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.n_y[2]",
+  "valueReference": 16777424,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.n_y[3]",
+  "valueReference": 16777425,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.DiscSpecificHeat",
+  "valueReference": 16777426,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 440.0,
+  "unit": null,
+  "description": "Specific Heat Capacity of brake disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.T_start",
+  "valueReference": 16777427,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 293.15,
+  "unit": null,
+  "description": "Fixed temperature if no thermal model used or initial temperature"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.torqueReaction.phi0",
+  "valueReference": 16777428,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Fixed offset angle of housing"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.brake.mue",
+  "valueReference": 16777429,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Friction coefficient"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.brake.cgeo",
+  "valueReference": 16777430,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Geometry and clamping factor"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.brake.tau_max",
+  "valueReference": 16777431,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 3750.0,
+  "unit": null,
+  "description": "Maximum torque"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.brake.c",
+  "valueReference": 16777432,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 100000.0,
+  "unit": null,
+  "description": "Contact stiffness"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.brake.d",
+  "valueReference": 16777433,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 10000.0,
+  "unit": null,
+  "description": "Damping in elastic region"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.brake.d_viscous",
+  "valueReference": 16777434,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Viscous friction coefficient"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.shaftLength.r_shape[1]",
+  "valueReference": 16777437,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.shaftLength.r_shape[2]",
+  "valueReference": 16777438,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.shaftLength.r_shape[3]",
+  "valueReference": 16777439,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.usedAsLinearisationState",
+  "valueReference": 16777441,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": null
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.n_x[1]",
+  "valueReference": 16777442,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.n_x[2]",
+  "valueReference": 16777443,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.n_x[3]",
+  "valueReference": 16777444,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.n_y[1]",
+  "valueReference": 16777445,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.n_y[2]",
+  "valueReference": 16777446,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.n_y[3]",
+  "valueReference": 16777447,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.r_shape[1]",
+  "valueReference": 16777448,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.r_shape[2]",
+  "valueReference": 16777449,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.r_shape[3]",
+  "valueReference": 16777450,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.phi_shape[1]",
+  "valueReference": 16777451,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.phi_shape[2]",
+  "valueReference": 16777452,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.phi_shape[3]",
+  "valueReference": 16777453,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.disc.body.extra",
+  "valueReference": 16777454,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Additional animation information"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.rMassOrigin[1]",
+  "valueReference": 16777455,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.rMassOrigin[2]",
+  "valueReference": 16777456,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.rMassOrigin[3]",
+  "valueReference": 16777457,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.r_CM_InLocal",
+  "valueReference": 16777458,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": "=true if r_CM is resolved in local orientation, else r_CM is resolved relative to frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.angles_start[1]",
+  "valueReference": 16777459,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.angles_start[2]",
+  "valueReference": 16777460,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.angles_start[3]",
+  "valueReference": 16777461,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.w_0_start[1]",
+  "valueReference": 16777462,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial or guess values of angular velocity of frame_a resolved in world frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.w_0_start[2]",
+  "valueReference": 16777463,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial or guess values of angular velocity of frame_a resolved in world frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.w_0_start[3]",
+  "valueReference": 16777464,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial or guess values of angular velocity of frame_a resolved in world frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.z_0_start[1]",
+  "valueReference": 16777465,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angular acceleration z_0 = der(w_0)"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.z_0_start[2]",
+  "valueReference": 16777466,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angular acceleration z_0 = der(w_0)"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.z_0_start[3]",
+  "valueReference": 16777467,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angular acceleration z_0 = der(w_0)"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.extra",
+  "valueReference": 16777468,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Additional parameter depending on shapeType (see docu of Visualizers.Advanced.Shape)."
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.sphereDiameter",
+  "valueReference": 16777469,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.05,
+  "unit": null,
+  "description": "Diameter of sphere"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.animateInertia",
+  "valueReference": 16777470,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": "Visualise the position and orientation of the inertia matrix"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.lengthInertiaFrame",
+  "valueReference": 16777471,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.5,
+  "unit": null,
+  "description": "Length of axes arrows for inertia matrix frame visualiser"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.colourInertia[1]",
+  "valueReference": 16777472,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of inertia frame visualiser"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.colourInertia[2]",
+  "valueReference": 16777473,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of inertia frame visualiser"
+ },
+ {
+  "name": "vehicle.brakes.brake_2.caliper.colourInertia[3]",
+  "valueReference": 16777474,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Integer",
+  "start": 0,
+  "unit": null,
+  "description": "Colour of inertia frame visualiser"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.leftWheel",
+  "valueReference": 16777477,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Boolean",
+  "start": true,
+  "unit": null,
+  "description": "Left wheel brake"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.rCaliper[1]",
+  "valueReference": 16777478,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.rCaliper[2]",
+  "valueReference": 16777479,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.rCaliper[3]",
+  "valueReference": 16777480,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from wheel centre to the brake force reaction point of the caliper resolved in the wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.outerDiameter",
+  "valueReference": 16777481,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.25,
+  "unit": null,
+  "description": "Disc usable outer diameter"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.innerDiameter",
+  "valueReference": 16777482,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.15,
+  "unit": null,
+  "description": "Disc usable inner diameter"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.thickness",
+  "valueReference": 16777483,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.012,
+  "unit": null,
+  "description": "Thickness of disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.mDisc",
+  "valueReference": 16777484,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 2.5,
+  "unit": null,
+  "description": "Mass of brake disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.rCM",
+  "valueReference": 16777485,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Distance from midpoint of the brake disc thickness to the centre of mass of along the spin axis relative to wheel hub orientation (x axis along the spin axis away from the vehicle centreline)"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.IDisc_xx",
+  "valueReference": 16777486,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.1,
+  "unit": null,
+  "description": "Total Moment of inertia around axis of rotation"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.mCaliper",
+  "valueReference": 16777487,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Mass of caliper"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.ICaliper_11",
+  "valueReference": 16777488,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 1,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.ICaliper_22",
+  "valueReference": 16777489,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 2,2 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.ICaliper_33",
+  "valueReference": 16777490,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.001,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,3 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.ICaliper_21",
+  "valueReference": 16777491,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 2,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.ICaliper_31",
+  "valueReference": 16777492,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,1 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.ICaliper_32",
+  "valueReference": 16777493,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Caliper inertia matrix 3,2 element"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.n_x[1]",
+  "valueReference": 16777494,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.n_x[2]",
+  "valueReference": 16777495,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.n_x[3]",
+  "valueReference": 16777496,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.n_y[1]",
+  "valueReference": 16777497,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.n_y[2]",
+  "valueReference": 16777498,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.n_y[3]",
+  "valueReference": 16777499,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia of the caliper resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.DiscSpecificHeat",
+  "valueReference": 16777500,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 440.0,
+  "unit": null,
+  "description": "Specific Heat Capacity of brake disc"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.T_start",
+  "valueReference": 16777501,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 293.15,
+  "unit": null,
+  "description": "Fixed temperature if no thermal model used or initial temperature"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.torqueReaction.phi0",
+  "valueReference": 16777502,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Fixed offset angle of housing"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.brake.mue",
+  "valueReference": 16777503,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Friction coefficient"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.brake.cgeo",
+  "valueReference": 16777504,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Geometry and clamping factor"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.brake.tau_max",
+  "valueReference": 16777505,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 3200.0,
+  "unit": null,
+  "description": "Maximum torque"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.brake.c",
+  "valueReference": 16777506,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 100000.0,
+  "unit": null,
+  "description": "Contact stiffness"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.brake.d",
+  "valueReference": 16777507,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 10000.0,
+  "unit": null,
+  "description": "Damping in elastic region"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.brake.d_viscous",
+  "valueReference": 16777508,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Viscous friction coefficient"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.shaftLength.r_shape[1]",
+  "valueReference": 16777511,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.shaftLength.r_shape[2]",
+  "valueReference": 16777512,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.shaftLength.r_shape[3]",
+  "valueReference": 16777513,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Vector from frame_a to shape origin, resolved in frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.usedAsLinearisationState",
+  "valueReference": 16777515,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": null
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.n_x[1]",
+  "valueReference": 16777516,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.n_x[2]",
+  "valueReference": 16777517,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.n_x[3]",
+  "valueReference": 16777518,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along x-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.n_y[1]",
+  "valueReference": 16777519,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.n_y[2]",
+  "valueReference": 16777520,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 1.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.n_y[3]",
+  "valueReference": 16777521,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "1",
+  "description": "Vector along y-axis of principal moment of inertia resolved in flange_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.r_shape[1]",
+  "valueReference": 16777522,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.r_shape[2]",
+  "valueReference": 16777523,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.r_shape[3]",
+  "valueReference": 16777524,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position vector from origin of object frame to shape origin, resolved in object frame"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.phi_shape[1]",
+  "valueReference": 16777525,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.phi_shape[2]",
+  "valueReference": 16777526,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.phi_shape[3]",
+  "valueReference": 16777527,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Angle to rotate from frame_a into shape origin using sequence {1,2,3}"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.disc.body.extra",
+  "valueReference": 16777528,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Additional animation information"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.caliper.rMassOrigin[1]",
+  "valueReference": 16777529,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.caliper.rMassOrigin[2]",
+  "valueReference": 16777530,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.caliper.rMassOrigin[3]",
+  "valueReference": 16777531,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Position of mass origin resolved in frame_a orientation"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.caliper.r_CM_InLocal",
+  "valueReference": 16777532,
+  "causality": "parameter",
+  "variability": "tunable",
+  "type": "Boolean",
+  "start": false,
+  "unit": null,
+  "description": "=true if r_CM is resolved in local orientation, else r_CM is resolved relative to frame_a"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.caliper.angles_start[1]",
+  "valueReference": 16777533,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.caliper.angles_start[2]",
+  "valueReference": 16777534,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "vehicle.brakes.brake_3.caliper.angles_start[3]",
+  "valueReference": 16777535,
+  "causality": "parameter",
+  "variability": "fixed",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Initial values of angles to rotate frame_a around 'sequence_start' axes into frame_b"
+ },
+ {
+  "name": "controlBus.brakesBus.wheelSpeed_1",
+  "valueReference": 335544320,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": "Absolute angular velocity of flange as output signal"
+ },
+ {
+  "name": "controlBus.brakesBus.wheelSpeed_2",
+  "valueReference": 335544321,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": "Absolute angular velocity of flange as output signal"
+ },
+ {
+  "name": "controlBus.brakesBus.wheelSpeed_3",
+  "valueReference": 335544322,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": "Absolute angular velocity of flange as output signal"
+ },
+ {
+  "name": "controlBus.brakesBus.wheelSpeed_4",
+  "valueReference": 335544323,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": "Absolute angular velocity of flange as output signal"
+ },
+ {
+  "name": "controlBus.chassisBus.lateralAcceleration",
+  "valueReference": 335544324,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m/s2",
+  "description": "Absolute acceleration vector"
+ },
+ {
+  "name": "controlBus.chassisBus.longitudinalAcceleration",
+  "valueReference": 335544325,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m/s2",
+  "description": null
+ },
+ {
+  "name": "controlBus.chassisBus.longitudinalVelocity",
+  "valueReference": 335544326,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m/s",
+  "description": "Transmission output speed"
+ },
+ {
+  "name": "controlBus.chassisBus.pitchAngle",
+  "valueReference": 67108871,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad",
+  "description": "Pitch angle relative to the ground"
+ },
+ {
+  "name": "controlBus.chassisBus.rollAngle",
+  "valueReference": 67108872,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad",
+  "description": "Roll angle relative to the ground"
+ },
+ {
+  "name": "controlBus.chassisBus.yawRate",
+  "valueReference": 67108873,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": "Yaw rate of vehicle"
+ },
+ {
+  "name": "controlBus.chassisBus.yawRate_G",
+  "valueReference": 67108874,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": "Yaw rate relative to the ground"
+ },
+ {
+  "name": "controlBus.driverBus.acceleratorPedalPosition",
+  "valueReference": 335544331,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m",
+  "description": "Real accelerator pedal position (m)"
+ },
+ {
+  "name": "controlBus.driverBus.brakePedalPosition",
+  "valueReference": 335544332,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m",
+  "description": "Real brake pedal position (m)"
+ },
+ {
+  "name": "controlBus.driverBus.gearboxMode",
+  "valueReference": 335544333,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Integer",
+  "start": null,
+  "unit": null,
+  "description": "Selected gear"
+ },
+ {
+  "name": "controlBus.driverBus.ignition",
+  "valueReference": 335544334,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Integer",
+  "start": null,
+  "unit": null,
+  "description": "Ignition from driver (Off, on and start)"
+ },
+ {
+  "name": "controlBus.driverBus.requestedGear",
+  "valueReference": 67108879,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Integer",
+  "start": null,
+  "unit": null,
+  "description": "Driver requested gear"
+ },
+ {
+  "name": "controlBus.driverBus.steeringWheelAngle",
+  "valueReference": 335544336,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad",
+  "description": "Steering angle in rad"
+ },
+ {
+  "name": "controlBus.driverBus.steeringWheelTorque",
+  "valueReference": 67108881,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": "N.m",
+  "description": "Steering torque in N.m"
+ },
+ {
+  "name": "controlBus.engineBus.coolantTemperature",
+  "valueReference": 67108882,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "K",
+  "description": "Temperature of cooling system"
+ },
+ {
+  "name": "controlBus.engineBus.power",
+  "valueReference": 335544339,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "W",
+  "description": "Transmission flange power from engine"
+ },
+ {
+  "name": "controlBus.engineBus.speed",
+  "valueReference": 335544340,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": "Engine speed"
+ },
+ {
+  "name": "controlBus.engineBus.torque",
+  "valueReference": 335544341,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "N.m",
+  "description": "Transmission flange torque from engine"
+ },
+ {
+  "name": "controlBus.engineBus.wRedLine",
+  "valueReference": 67108886,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rev/min",
+  "description": "Engine Red Line in rev/min"
+ },
+ {
+  "name": "controlBus.engineControlBus.engineStart",
+  "valueReference": 335544343,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Boolean",
+  "start": null,
+  "unit": null,
+  "description": "True if ignition is in start"
+ },
+ {
+  "name": "controlBus.engineControlBus.fuelCutOffReal",
+  "valueReference": 335544344,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": null
+ },
+ {
+  "name": "controlBus.engineControlBus.ignitionOn",
+  "valueReference": 335544345,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Boolean",
+  "start": null,
+  "unit": null,
+  "description": "True if ignition is not off"
+ },
+ {
+  "name": "controlBus.engineControlBus.throttleAngle_1",
+  "valueReference": 335544346,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": null
+ },
+ {
+  "name": "controlBus.transmissionBus.outputSpeed",
+  "valueReference": 335544347,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": "Transmission output speed"
+ },
+ {
+  "name": "controlBus.transmissionControlBus.currentGear",
+  "valueReference": 335544348,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Integer",
+  "start": null,
+  "unit": null,
+  "description": "Selected gear"
+ },
+ {
+  "name": "controlBus.transmissionControlBus.lockUpClutchDemand",
+  "valueReference": 335544349,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Lock-up clutch torque demand"
+ },
+ {
+  "name": "controlBus.transmissionControlBus.torqueDownRequest",
+  "valueReference": 335544350,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Torque reducing fraction demand when changing gear"
+ },
+ {
+  "name": "controlBus.fuelTankBus.fuelConsL100KmAv",
+  "valueReference": 335544351,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "cl/km",
+  "description": "Average fuel consumption"
+ },
+ {
+  "name": "controlBus.fuelTankBus.fuelConsL100KmInst",
+  "valueReference": 335544352,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "cl/km",
+  "description": "Instant fuel consumption"
+ },
+ {
+  "name": "controlBus.fuelTankBus.fuelLevel",
+  "valueReference": 335544353,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Normalised fuel level (0-1)"
+ },
+ {
+  "name": "controlBus.fuelTankBus.noFuel",
+  "valueReference": 335544354,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Real control of fuel cut (0=no cut, 1=cut fuel)"
+ },
+ {
+  "name": "controlBus.fuelTankControlBus.fuelFlow",
+  "valueReference": 335544355,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "kg/s",
+  "description": "Mass flow rate of fuel"
+ },
+ {
+  "name": "controlBus.wheel_1.beltConnector.w_x",
+  "valueReference": 335544356,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "X-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_1.beltConnector.w_y",
+  "valueReference": 67108901,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Y-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_1.beltConnector.w_z",
+  "valueReference": 67108902,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Z-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.v_x",
+  "valueReference": 335544359,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Contact patch velocity in heading direction"
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.v_y",
+  "valueReference": 335544360,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Contact patch velocity in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.penetrationDepth",
+  "valueReference": 335544361,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel-ground indentation"
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.contact",
+  "valueReference": 335544362,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Boolean",
+  "start": null,
+  "unit": null,
+  "description": "If true, wheel and ground are in contact"
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.mue",
+  "valueReference": 67108907,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Friction coefficient"
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.gamma",
+  "valueReference": 335544364,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Inclination (wheel camber angle)"
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.penetrationVelocity",
+  "valueReference": 335544365,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Connector of Real output signal"
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.spinVelocity",
+  "valueReference": 335544366,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": null
+ },
+ {
+  "name": "controlBus.wheel_1.contactPoint.tyreRadius",
+  "valueReference": 335544367,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m",
+  "description": "Tyre radial distance to ground contact point"
+ },
+ {
+  "name": "controlBus.wheel_1.hubData.w",
+  "valueReference": 335544368,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel rotational speed"
+ },
+ {
+  "name": "controlBus.wheel_1.hubData.phi",
+  "valueReference": 335544369,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad",
+  "description": "Absolute angle of flange as output signal"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.fx",
+  "valueReference": 335544370,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact force in longitudinal direction"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.fy",
+  "valueReference": 67108915,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact force in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.fz",
+  "valueReference": 335544372,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact force in normal direction"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.tx",
+  "valueReference": 67108917,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact torque in longitudinal direction"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.ty",
+  "valueReference": 335544374,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact torque in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.tz",
+  "valueReference": 67108919,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact torque in normal direction"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.kappa",
+  "valueReference": 335544376,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Longitudinal slip ratio"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.alpha",
+  "valueReference": 67108921,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Lateral slip angle"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.kappaMax",
+  "valueReference": 67108922,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Slip ratio for peak tractive effort"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.alphaMax",
+  "valueReference": 67108923,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Slip angle for peak lateral effort"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.effectiveRadius",
+  "valueReference": 335544380,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Effective radius"
+ },
+ {
+  "name": "controlBus.wheel_1.tyreForces.fz_external",
+  "valueReference": 67108925,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "N",
+  "description": "Externally calculated fz"
+ },
+ {
+  "name": "controlBus.wheel_2.beltConnector.w_x",
+  "valueReference": 335544382,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "X-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_2.beltConnector.w_y",
+  "valueReference": 67108927,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Y-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_2.beltConnector.w_z",
+  "valueReference": 67108928,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Z-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.v_x",
+  "valueReference": 335544385,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Contact patch velocity in heading direction"
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.v_y",
+  "valueReference": 335544386,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Contact patch velocity in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.penetrationDepth",
+  "valueReference": 335544387,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel-ground indentation"
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.contact",
+  "valueReference": 335544388,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Boolean",
+  "start": null,
+  "unit": null,
+  "description": "If true, wheel and ground are in contact"
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.mue",
+  "valueReference": 67108933,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Friction coefficient"
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.gamma",
+  "valueReference": 335544390,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Inclination (wheel camber angle)"
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.penetrationVelocity",
+  "valueReference": 335544391,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Connector of Real output signal"
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.spinVelocity",
+  "valueReference": 335544392,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": null
+ },
+ {
+  "name": "controlBus.wheel_2.contactPoint.tyreRadius",
+  "valueReference": 335544393,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m",
+  "description": "Tyre radial distance to ground contact point"
+ },
+ {
+  "name": "controlBus.wheel_2.hubData.w",
+  "valueReference": 335544394,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel rotational speed"
+ },
+ {
+  "name": "controlBus.wheel_2.hubData.phi",
+  "valueReference": 335544395,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad",
+  "description": "Absolute angle of flange as output signal"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.fx",
+  "valueReference": 335544396,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact force in longitudinal direction"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.fy",
+  "valueReference": 67108941,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact force in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.fz",
+  "valueReference": 335544398,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact force in normal direction"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.tx",
+  "valueReference": 67108943,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact torque in longitudinal direction"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.ty",
+  "valueReference": 335544400,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact torque in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.tz",
+  "valueReference": 67108945,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact torque in normal direction"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.kappa",
+  "valueReference": 335544402,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Longitudinal slip ratio"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.alpha",
+  "valueReference": 67108947,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Lateral slip angle"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.kappaMax",
+  "valueReference": 67108948,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Slip ratio for peak tractive effort"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.alphaMax",
+  "valueReference": 67108949,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Slip angle for peak lateral effort"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.effectiveRadius",
+  "valueReference": 335544406,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Effective radius"
+ },
+ {
+  "name": "controlBus.wheel_2.tyreForces.fz_external",
+  "valueReference": 67108951,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "N",
+  "description": "Externally calculated fz"
+ },
+ {
+  "name": "controlBus.wheel_3.beltConnector.w_x",
+  "valueReference": 335544408,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "X-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_3.beltConnector.w_y",
+  "valueReference": 67108953,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Y-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_3.beltConnector.w_z",
+  "valueReference": 67108954,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Z-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.v_x",
+  "valueReference": 335544411,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Contact patch velocity in heading direction"
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.v_y",
+  "valueReference": 335544412,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Contact patch velocity in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.penetrationDepth",
+  "valueReference": 335544413,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel-ground indentation"
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.contact",
+  "valueReference": 335544414,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Boolean",
+  "start": null,
+  "unit": null,
+  "description": "If true, wheel and ground are in contact"
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.mue",
+  "valueReference": 67108959,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Friction coefficient"
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.gamma",
+  "valueReference": 335544416,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Inclination (wheel camber angle)"
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.penetrationVelocity",
+  "valueReference": 335544417,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Connector of Real output signal"
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.spinVelocity",
+  "valueReference": 335544418,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": null
+ },
+ {
+  "name": "controlBus.wheel_3.contactPoint.tyreRadius",
+  "valueReference": 335544419,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m",
+  "description": "Tyre radial distance to ground contact point"
+ },
+ {
+  "name": "controlBus.wheel_3.hubData.w",
+  "valueReference": 335544420,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel rotational speed"
+ },
+ {
+  "name": "controlBus.wheel_3.hubData.phi",
+  "valueReference": 335544421,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad",
+  "description": "Absolute angle of flange as output signal"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.fx",
+  "valueReference": 335544422,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact force in longitudinal direction"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.fy",
+  "valueReference": 67108967,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact force in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.fz",
+  "valueReference": 335544424,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact force in normal direction"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.tx",
+  "valueReference": 67108969,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact torque in longitudinal direction"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.ty",
+  "valueReference": 335544426,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact torque in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.tz",
+  "valueReference": 67108971,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact torque in normal direction"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.kappa",
+  "valueReference": 335544428,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Longitudinal slip ratio"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.alpha",
+  "valueReference": 67108973,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Lateral slip angle"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.kappaMax",
+  "valueReference": 67108974,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Slip ratio for peak tractive effort"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.alphaMax",
+  "valueReference": 67108975,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Slip angle for peak lateral effort"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.effectiveRadius",
+  "valueReference": 335544432,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Effective radius"
+ },
+ {
+  "name": "controlBus.wheel_3.tyreForces.fz_external",
+  "valueReference": 67108977,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "N",
+  "description": "Externally calculated fz"
+ },
+ {
+  "name": "controlBus.wheel_4.beltConnector.w_x",
+  "valueReference": 335544434,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "X-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_4.beltConnector.w_y",
+  "valueReference": 67108979,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Y-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_4.beltConnector.w_z",
+  "valueReference": 67108980,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Z-component of tyre belt rotational speed vector"
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.v_x",
+  "valueReference": 335544437,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Contact patch velocity in heading direction"
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.v_y",
+  "valueReference": 335544438,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Contact patch velocity in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.penetrationDepth",
+  "valueReference": 335544439,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel-ground indentation"
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.contact",
+  "valueReference": 335544440,
+  "causality": "output",
+  "variability": "discrete",
+  "type": "Boolean",
+  "start": null,
+  "unit": null,
+  "description": "If true, wheel and ground are in contact"
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.mue",
+  "valueReference": 67108985,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Friction coefficient"
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.gamma",
+  "valueReference": 335544442,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Inclination (wheel camber angle)"
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.penetrationVelocity",
+  "valueReference": 335544443,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Connector of Real output signal"
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.spinVelocity",
+  "valueReference": 335544444,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad/s",
+  "description": null
+ },
+ {
+  "name": "controlBus.wheel_4.contactPoint.tyreRadius",
+  "valueReference": 335544445,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "m",
+  "description": "Tyre radial distance to ground contact point"
+ },
+ {
+  "name": "controlBus.wheel_4.hubData.w",
+  "valueReference": 335544446,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel rotational speed"
+ },
+ {
+  "name": "controlBus.wheel_4.hubData.phi",
+  "valueReference": 335544447,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "rad",
+  "description": "Absolute angle of flange as output signal"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.fx",
+  "valueReference": 335544448,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact force in longitudinal direction"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.fy",
+  "valueReference": 67108993,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact force in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.fz",
+  "valueReference": 335544450,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact force in normal direction"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.tx",
+  "valueReference": 67108995,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact torque in longitudinal direction"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.ty",
+  "valueReference": 335544452,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Wheel contact torque in lateral direction"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.tz",
+  "valueReference": 67108997,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Wheel contact torque in normal direction"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.kappa",
+  "valueReference": 335544454,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Longitudinal slip ratio"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.alpha",
+  "valueReference": 67108999,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 0.0,
+  "unit": null,
+  "description": "Lateral slip angle"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.kappaMax",
+  "valueReference": 67109000,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Slip ratio for peak tractive effort"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.alphaMax",
+  "valueReference": 67109001,
+  "causality": "output",
+  "variability": "constant",
+  "type": "Real",
+  "start": 1.0,
+  "unit": null,
+  "description": "Slip angle for peak lateral effort"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.effectiveRadius",
+  "valueReference": 335544458,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": null,
+  "description": "Effective radius"
+ },
+ {
+  "name": "controlBus.wheel_4.tyreForces.fz_external",
+  "valueReference": 67109003,
+  "causality": "output",
+  "variability": "continuous",
+  "type": "Real",
+  "start": null,
+  "unit": "N",
+  "description": "Externally calculated fz"
+ }
+]
