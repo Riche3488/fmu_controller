@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMockClient, MOCK_FMU_ID as FMU_ID } from '../../api/mock/mockClient';
 import { renderApp } from '../../test/render';
@@ -65,5 +65,49 @@ describe('ObjectivesStep', () => {
     expect(await screen.findByText('저장하지 않은 변경 사항이 있습니다')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '버리고 이동' }));
     expect(await screen.findByRole('button', { name: '새로 설계' })).toBeInTheDocument();
+  });
+
+  test('Ctrl+S가 작업 공간 폼을 저장', async () => {
+    const client = createMockClient({ tickMs: 5 });
+    const o = await client.createObjective({ name: 'good', code: GOOD });
+    const spy = vi.spyOn(client, 'updateObjective');
+    renderApp({ route: `/fmus/${FMU_ID}/objectives/${o.id}`, client });
+    await userEvent.type(await screen.findByLabelText('목적함수 이름'), 'x');
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(o.id, expect.objectContaining({ name: 'goodx' })));
+  });
+
+  describe('단계 바 ③ 완료 표시 (nCompatibleObjectives)', () => {
+    const done = async () => {
+      const link = await screen.findByRole('link', { name: /③ 목적함수/ });
+      await screen.findByRole('link', { name: /① / });
+      await new Promise(r => setTimeout(r, 300));
+      return !!link.querySelector('[aria-label="완료"]');
+    };
+    test('잡 있고 호환 목적함수 있으면 완료', async () => {
+      const client = createMockClient({ tickMs: 5 });
+      await client.createObjective({ name: 'good', code: GOOD });
+      await finishedBatch(client);
+      renderApp({ route: `/fmus/${FMU_ID}/objectives`, client });
+      await waitFor(async () => expect(await done()).toBe(true));
+    });
+    test('잡 있는데 비호환이면 미완료', async () => {
+      const client = createMockClient({ tickMs: 5 });
+      await client.createObjective({ name: 'bad', code: BAD });
+      await finishedBatch(client);
+      renderApp({ route: `/fmus/${FMU_ID}/objectives`, client });
+      expect(await done()).toBe(false);
+    });
+    test('잡 없으면 FMU 변수 기준: 기록 가능이면 완료, 아니면 미완료', async () => {
+      const c1 = createMockClient({ tickMs: 5 });
+      await c1.createObjective({ name: 'good', code: GOOD });
+      const r1 = renderApp({ route: `/fmus/${FMU_ID}/objectives`, client: c1 });
+      await waitFor(async () => expect(await done()).toBe(true));
+      r1.unmount();
+      const c2 = createMockClient({ tickMs: 5 });
+      await c2.createObjective({ name: 'bad', code: BAD });
+      renderApp({ route: `/fmus/${FMU_ID}/objectives`, client: c2 });
+      expect(await done()).toBe(false);
+    });
   });
 });

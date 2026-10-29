@@ -1,9 +1,11 @@
 import { describe, expect, test, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderApp } from '../test/render';
 import { createMockClient } from '../api/mock/mockClient';
 import { finishedBatch } from '../test/fixtures';
+import { generateCode } from '../lib/builder/codegen';
+import { DEFAULT_SPEC } from '../lib/builder/spec';
 
 vi.mock('@monaco-editor/react', () => ({
   default: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
@@ -114,5 +116,16 @@ describe('ObjectiveEditorPage', () => {
     expect(await screen.findByRole('textbox', { name: '미리보기·호환성 기준 FMU' })).toBeInTheDocument();
     expect(await screen.findByText('생성된 코드')).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: '테스트할 run' })).not.toBeInTheDocument();
+  });
+
+  test('Ctrl+S saves a builder-mode objective', async () => {
+    const { client } = await setup();
+    const o = await client.createObjective({ name: 'built', code: generateCode(DEFAULT_SPEC) });
+    const spy = vi.spyOn(client, 'updateObjective');
+    renderApp({ route: `/objectives/${o.id}`, client });
+    await screen.findByRole('textbox', { name: '미리보기·호환성 기준 FMU' });
+    await userEvent.type(screen.getByLabelText('목적함수 이름'), 'x');
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(o.id, expect.objectContaining({ name: 'builtx' })));
   });
 });

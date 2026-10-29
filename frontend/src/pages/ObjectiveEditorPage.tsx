@@ -8,12 +8,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
 import type { ObjectiveTestResult } from '../api/types';
 import TEMPLATE from '../api/mock/fixtures/objective_template.py.txt?raw';
+import { SAVE_NOTE } from '../lib/objectiveText';
+import { useSaveShortcut } from '../components/useSaveShortcut';
 import { CodeHashBadge } from '../components/CodeHashBadge';
 import { ObjectiveDesigner } from '../components/objective/ObjectiveDesigner';
 import { generateCode, parseBuilderCode } from '../lib/builder/codegen';
 import { DEFAULT_SPEC } from '../lib/builder/spec';
 
-export const SAVE_NOTE = '저장하면 모든 결과 화면의 이 목적함수 값이 새 코드로 다시 계산됩니다.';
 
 function CreateModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   const api = useApi();
@@ -134,6 +135,8 @@ export function ObjectiveEditorPage() {
     },
   });
 
+  const saveNow = useSaveShortcut(() => save.mutate(), dirty && !save.isPending);
+
   const go = (id: string) => (dirty ? setPendingNav(id) : navigate(`/objectives/${id}`));
 
   return (
@@ -180,14 +183,11 @@ export function ObjectiveEditorPage() {
                   <Editor height="60vh" language="python" value={draft.code}
                     onChange={v => setDraft(d => (d ? { ...d, code: v ?? '' } : d))}
                     onMount={(editor, monaco) => {
-                      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-                        document.querySelector<HTMLButtonElement>('[data-save-objective]')?.click();
-                      });
+                      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, saveNow);
                     }}
                     options={{ minimap: { enabled: false }, fontSize: 13, tabSize: 4 }} />
                 </Card>
               )}
-              <button data-save-objective hidden onClick={() => dirty && save.mutate()} />
             </Stack>
           ) : (
             <Text c="dimmed">왼쪽에서 목적함수를 선택하거나 새로 만드세요</Text>

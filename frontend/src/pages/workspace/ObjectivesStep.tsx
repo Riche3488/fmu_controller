@@ -1,6 +1,6 @@
 import { Alert, Badge, Button, Group, Modal, Stack, Table, Text, TextInput, Title } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../api/client';
 import type { Objective } from '../../api/types';
@@ -9,7 +9,8 @@ import { ObjectiveDesigner } from '../../components/objective/ObjectiveDesigner'
 import { useObjectiveCompat, type ObjectiveCompat } from '../../components/useObjectiveCompat';
 import { generateCode, parseBuilderCode } from '../../lib/builder/codegen';
 import { DEFAULT_SPEC } from '../../lib/builder/spec';
-import { SAVE_NOTE } from '../ObjectiveEditorPage';
+import { useSaveShortcut } from '../../components/useSaveShortcut';
+import { SAVE_NOTE } from '../../lib/objectiveText';
 
 const isBuilderCode = (code: string) => !!parseBuilderCode(code)?.intact;
 
@@ -90,16 +91,7 @@ function ObjectiveForm({ fmuId, saved }: { fmuId: string; saved: Objective | nul
     },
   });
 
-  // Ctrl+S로 저장 (Monaco가 포커스를 가져가도 문서 수준에서 잡는다)
-  const saveRef = useRef<() => void>(() => {});
-  saveRef.current = () => { if (dirty && draft.name.trim() && !save.isPending) save.mutate(); };
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveRef.current(); }
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, []);
+  useSaveShortcut(() => save.mutate(), dirty && !!draft.name.trim() && !save.isPending);
 
   return (
     <Stack>
