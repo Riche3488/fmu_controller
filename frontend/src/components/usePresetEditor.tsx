@@ -9,10 +9,11 @@ import { useApi } from '../api/client';
 import type { Job, Preset, PresetConfigs, PresetInput, PresetKind, PresetOf } from '../api/types';
 import { PresetMenuBar, PresetNameModal, usePresets } from './PresetMenuBar';
 
-const KIND_LABEL: Record<PresetKind, string> = { optimization: '최적화', batch: '배치' };
+const KIND_LABEL: Record<PresetKind, string> = { optimization: '최적화', batch: '배치', dashboard: '대시보드' };
 const SAVE_NOTE: Record<PresetKind, string> = {
   optimization: '목적함수·알고리즘·설계 변수·Resource 선택·실행 설정·표시 변수를 저장합니다. 잡 이름은 저장하지 않습니다.',
   batch: '스윕 파라미터·샘플링·Resource 후보·실행 설정·표시 변수를 저장합니다. 잡 이름은 저장하지 않습니다.',
+  dashboard: '차트 레이아웃과 패널 설정을 저장합니다.',
 };
 
 export const nowStamp = () => new Date().toISOString().slice(0, 16).replace('T', ' ');

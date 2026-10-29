@@ -191,10 +191,13 @@ export type BatchPresetConfig = PresetRunConfig & {
   /** resource path -> 후보 내용 sha256 목록 */
   resources: Record<string, string[]>;
 };
-export type PresetConfigs = { optimization: OptPresetConfig; batch: BatchPresetConfig };
+export type DashboardLayout = '1x1' | '1x2' | '2x2' | '2x3' | '3x2' | '3x3';
+/** 차트 작업대 레이아웃. 패널 내용은 사용처에서 parsePanels로 검증한다 */
+export type DashboardPresetConfig = { layout: DashboardLayout; syncTimeZoom: boolean; panels: unknown[] };
+export type PresetConfigs = { optimization: OptPresetConfig; batch: BatchPresetConfig; dashboard: DashboardPresetConfig };
 export type PresetKind = keyof PresetConfigs;
 type PresetMeta = { id: string; name: string; sourceFmuId: string | null; sourceModelName: string; createdAt: string; updatedAt: string };
 export type PresetOf<K extends PresetKind> = PresetMeta & { kind: K; config: PresetConfigs[K] };
-export type Preset = PresetOf<'optimization'> | PresetOf<'batch'>;
+export type Preset = PresetOf<'optimization'> | PresetOf<'batch'> | PresetOf<'dashboard'>;
 export type PresetInputOf<K extends PresetKind> = { name: string; kind: K; sourceFmuId: string | null; config: PresetConfigs[K] };
-export type PresetInput = PresetInputOf<'optimization'> | PresetInputOf<'batch'>;
+export type PresetInput = PresetInputOf<'optimization'> | PresetInputOf<'batch'> | PresetInputOf<'dashboard'>;

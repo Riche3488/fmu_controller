@@ -340,8 +340,17 @@ class BatchPresetConfig(PresetRunConfig):
     resources: dict[str, list[str]] = {}
 
 
-PRESET_CONFIGS: dict[str, type[PresetRunConfig]] = {"optimization": OptPresetConfig, "batch": BatchPresetConfig}
-PresetKind = Literal["optimization", "batch"]
+class DashboardPresetConfig(CamelModel):
+    """차트 작업대 레이아웃. 패널 내용은 프론트가 소유하므로 dict 그대로 저장한다."""
+    layout: Literal["1x1", "1x2", "2x2", "2x3", "3x2", "3x3"] = "2x2"
+    sync_time_zoom: bool = True
+    panels: list[dict] = []
+
+
+PRESET_CONFIGS: dict[str, type[CamelModel]] = {
+    "optimization": OptPresetConfig, "batch": BatchPresetConfig, "dashboard": DashboardPresetConfig,
+}
+PresetKind = Literal["optimization", "batch", "dashboard"]
 
 
 class PresetIn(CamelModel):

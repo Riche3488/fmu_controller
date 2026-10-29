@@ -9,13 +9,16 @@ import { presetSummary } from '../lib/presets';
 
 const NO_TRANSITION = { transitionProps: { duration: 0 } };
 
-const SETUP_PATH: Record<PresetKind, string> = { optimization: 'optimize', batch: 'batch' };
+// 대시보드는 FMU 설정 화면으로 열지 않는다
+const SETUP_PATH: Record<Exclude<PresetKind, 'dashboard'>, string> = { optimization: 'optimize', batch: 'batch' };
+const KINDS: PresetKind[] = ['optimization', 'batch', 'dashboard'];
 
 /** 프리셋 내용 한 줄 설명 (목적함수 이름은 현재 목록에서 찾는다) */
 function PresetDetail({ preset, objectiveName }: { preset: Preset; objectiveName: (id: string) => string }) {
   if (preset.kind === 'batch') {
     return <>파라미터: {preset.config.params.map(p => p.name).join(', ') || '-'}</>;
   }
+  if (preset.kind === 'dashboard') return <>패널: {preset.config.panels.length}개</>;
   const c = preset.config;
   return (
     <>
@@ -30,7 +33,7 @@ export function PresetsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const kind: PresetKind = searchParams.get('kind') === 'batch' ? 'batch' : 'optimization';
+  const kind: PresetKind = KINDS.find(k => k === searchParams.get('kind')) ?? 'optimization';
   const presets = usePresets(kind);
   const fmus = useQuery({ queryKey: ['fmus'], queryFn: () => api.listFmus() });
   const objectives = useQuery({ queryKey: ['objectives'], queryFn: () => api.listObjectives() });
@@ -63,6 +66,7 @@ export function PresetsPage() {
         <Tabs.List>
           <Tabs.Tab value="optimization">최적화</Tabs.Tab>
           <Tabs.Tab value="batch">배치 해석</Tabs.Tab>
+          <Tabs.Tab value="dashboard">대시보드</Tabs.Tab>
         </Tabs.List>
       </Tabs>
       {presets.isError && <Alert color="red">{(presets.error as Error).message}</Alert>}
@@ -92,17 +96,17 @@ export function PresetsPage() {
                   <Table.Td><Text size="xs">{new Date(p.updatedAt).toLocaleString('ko-KR')}</Text></Table.Td>
                   <Table.Td>
                     <Group gap={4} wrap="nowrap" justify="end">
-                      <Menu position="bottom-end" shadow="md" {...NO_TRANSITION}>
+                      {p.kind !== 'dashboard' && <Menu position="bottom-end" shadow="md" {...NO_TRANSITION}>
                         <Menu.Target><Button size="compact-sm" disabled={targets.length === 0}>열기</Button></Menu.Target>
                         <Menu.Dropdown>
                           <Menu.Label>어느 FMU로 {kind === 'batch' ? '해석' : '최적화'}할까요?</Menu.Label>
                           {targets.map(f => (
-                            <Menu.Item key={f.id} onClick={() => navigate(`/fmus/${f.id}/${SETUP_PATH[p.kind]}?preset=${p.id}`)}>
+                            <Menu.Item key={f.id} onClick={() => navigate(`/fmus/${f.id}/${SETUP_PATH[p.kind as keyof typeof SETUP_PATH]}?preset=${p.id}`)}>
                               {f.fileName} — {f.modelName}{f.id === p.sourceFmuId ? ' (저장한 FMU)' : ''}
                             </Menu.Item>
                           ))}
                         </Menu.Dropdown>
-                      </Menu>
+                      </Menu>}
                       <Button size="compact-sm" variant="default" onClick={() => setRenaming(p)}>이름 바꾸기</Button>
                       <Button size="compact-sm" variant="subtle" color="red" onClick={() => setDeleting(p)}>삭제</Button>
                     </Group>

@@ -19,6 +19,7 @@ function batchSummary(c: { params: unknown[]; sampling: Sampling; nSamples: numb
 }
 
 export function presetSummary(p: Preset): string {
+  if (p.kind === 'dashboard') return `레이아웃 ${p.config.layout} · 패널 ${p.config.panels.length}개`;
   return p.kind === 'optimization' ? optSummary(p.config) : batchSummary(p.config);
 }
 

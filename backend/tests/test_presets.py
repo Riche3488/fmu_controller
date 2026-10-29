@@ -126,3 +126,31 @@ def test_batch_plot_variables_must_be_recorded():
     assert BatchRequest.model_validate({**base, "plotVariables": ["x"]}).plot_variables == ["x"]
     with pytest.raises(ValidationError, match="표시 변수는 기록 변수 중에서"):
         BatchRequest.model_validate({**base, "plotVariables": ["y"]})
+
+
+def dashboard_config(**kw):
+    return {"layout": "2x3", "syncTimeZoom": False, "panels": [{"id": "p1", "type": "line", "extra": {"a": 1}}], **kw}
+
+
+def test_dashboard_preset_roundtrip_and_filter(client):
+    r = client.post("/api/presets", json={"name": "wb", "kind": "dashboard", "config": dashboard_config()})
+    assert r.status_code == 201, r.text
+    p = r.json()
+    assert p["kind"] == "dashboard" and p["config"] == dashboard_config()
+    assert [x["id"] for x in client.get("/api/presets?kind=dashboard").json()] == [p["id"]]
+    assert client.get("/api/presets?kind=batch").json() == []
+    assert client.get(f"/api/presets/{p['id']}").json()["config"]["layout"] == "2x3"
+
+
+def test_dashboard_defaults_and_invalid_layout(client):
+    r = client.post("/api/presets", json={"name": "d", "kind": "dashboard", "config": {}})
+    assert r.status_code == 201 and r.json()["config"] == {"layout": "2x2", "syncTimeZoom": True, "panels": []}
+    bad = client.post("/api/presets", json={"name": "bad", "kind": "dashboard", "config": dashboard_config(layout="4x4")})
+    assert bad.status_code == 422
+
+
+def test_dashboard_preset_does_not_affect_candidate_scan(client):
+    from app.resources import catalog
+    client.post("/api/presets", json={"name": "wb", "kind": "dashboard", "config": dashboard_config()})
+    assert not hasattr(catalog, "PRESET_CONFIGS")
+    assert client.get("/api/presets").status_code == 200
