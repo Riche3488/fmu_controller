@@ -7,6 +7,7 @@
 import type { EChartsOption } from 'echarts';
 import type { Timeseries } from '../../api/types';
 import type { ChartKind, PanelSpec, WorkbenchData } from '../workbench';
+import { SCALAR_BUILDERS } from './scalar';
 
 export type { WorkbenchData } from '../workbench';
 
@@ -14,9 +15,11 @@ export type ChartResult = EChartsOption | { empty: string };
 /** ts: 시계열 차트(needsTimeseries)일 때 run id → 시계열 */
 export type ChartBuilder = (spec: PanelSpec, data: WorkbenchData, selected: string[], ts?: Record<string, Timeseries>) => ChartResult;
 
-export const CHART_BUILDERS: Partial<Record<ChartKind, ChartBuilder>> = {};
+export { DIM_OPACITY, itemOpacity } from './common';
 
-export const DIM_OPACITY = 0.15;
+export const CHART_BUILDERS: Partial<Record<ChartKind, ChartBuilder>> = {
+  ...SCALAR_BUILDERS,
+};
 
 export function buildChart(spec: PanelSpec, data: WorkbenchData, selected: string[], ts?: Record<string, Timeseries>): ChartResult {
   const builder = Object.hasOwn(CHART_BUILDERS, spec.chart) ? CHART_BUILDERS[spec.chart] : undefined;
@@ -25,11 +28,6 @@ export function buildChart(spec: PanelSpec, data: WorkbenchData, selected: strin
 
 export function isEmptyChart(r: ChartResult): r is { empty: string } {
   return typeof (r as { empty?: unknown }).empty === 'string';
-}
-
-/** 선택이 있으면 선택 안 된 run을 흐리게 */
-export function itemOpacity(runId: string, selected: string[]): number {
-  return selected.length === 0 || selected.includes(runId) ? 1 : DIM_OPACITY;
 }
 
 function itemRunId(item: unknown): string | undefined {
