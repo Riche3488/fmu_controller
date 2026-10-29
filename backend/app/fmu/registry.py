@@ -145,4 +145,4 @@ def delete_fmu(session: Session, fmu: Fmu, settings: Settings) -> None:
     shutil.rmtree(get_extract_dir(settings, fmu.id), ignore_errors=True)
     shutil.rmtree(settings.data_dir / "resources" / fmu.id, ignore_errors=True)
     for vid in variant_ids:
-        shutil.rmtree(settings.data_dir / "variants" / vid, ignore_errors=True)
+        catalog.remove_variant_dir(settings, vid)

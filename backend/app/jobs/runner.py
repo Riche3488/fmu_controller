@@ -33,6 +33,7 @@ log = logging.getLogger("app.jobs")
 POLL_SEC = 0.25
 TIMEOUT_ERROR = "timeout"
 INTERRUPTED = "interrupted"
+RESOURCE_PREP_ERROR = "resource 준비 실패"
 ACTIVE = ("queued", "running")
 
 
@@ -335,12 +336,24 @@ class JobManager:
                 if ctx.cancel.is_set():
                     return False
                 while not exhausted and len(inflight) < limit and self._slots.acquire(blocking=False):
-                    case = next(cases, None)
+                    try:
+                        case = next(cases, None)
+                    except BaseException:
+                        self._slots.release()
+                        raise
                     if case is None:
                         self._slots.release()
                         exhausted = True
-                    else:
+                        continue
+                    try:
                         submit(case)
+                    except Exception as e:  # variant 폴더 준비 실패 등: 이 케이스만 실패로 기록하고 계속
+                        self._slots.release()
+                        log.exception("job %s: case %s could not be submitted", job_id, case.index)
+                        run = self._record(job_id, fmu_id, case, new_id(), None,
+                                           f"{RESOURCE_PREP_ERROR}: {type(e).__name__}: {e}", "")
+                        if on_done:
+                            on_done(case, run)
                 if exhausted and not inflight:
                     return True
                 if not inflight:  # 다른 잡이 슬롯을 모두 쓰는 중

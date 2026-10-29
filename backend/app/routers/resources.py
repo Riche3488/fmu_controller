@@ -1,3 +1,5 @@
+from pathlib import PurePosixPath
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -82,7 +84,7 @@ def preview_candidate(fmu_id: str, cid: str, request: Request, var: str | None =
     if not path.is_file():
         raise HTTPException(404, "후보 파일이 디스크에 없습니다")
     try:
-        return preview(path, var)
+        return preview(path, var, ext=PurePosixPath(cand.path).suffix)
     except PreviewError as e:
         raise HTTPException(400, str(e)) from e
 

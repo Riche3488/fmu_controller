@@ -7,6 +7,7 @@ import threading
 import uuid
 from pathlib import Path
 
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -59,8 +60,16 @@ def variant_label(session: Session, v: Variant) -> str:
     parts = []
     for path in sorted(v.assignment):
         cand = session.get(ResourceCandidate, v.assignment[path])
-        parts.append(f"{posixpath.basename(path)}={cand.name if cand else '?'}")
+        parts.append(f"{posixpath.basename(path)}={candidate_display_name(session, cand) if cand else '?'}")
     return ", ".join(parts)
+
+
+def candidate_display_name(session: Session, cand: ResourceCandidate) -> str:
+    """같은 path에 같은 이름의 후보가 또 있으면(예: 수정본을 원래 이름으로 여러 번 업로드) 해시 앞 8자를 붙인다"""
+    dup = session.scalar(select(func.count()).select_from(ResourceCandidate).where(
+        ResourceCandidate.fmu_id == cand.fmu_id, ResourceCandidate.path == cand.path,
+        ResourceCandidate.name == cand.name, ResourceCandidate.id != cand.id))
+    return f"{cand.name}[{cand.sha256[:8]}]" if dup else cand.name
 
 
 _locks: dict[str, threading.Lock] = {}

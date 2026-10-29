@@ -56,8 +56,9 @@ def _decode(data: bytes) -> str:
     return data.decode("latin-1")
 
 
-def preview(path: Path, var: str | None = None) -> dict:
-    if path.suffix.lower() == ".mat":
+def preview(path: Path, var: str | None = None, ext: str | None = None) -> dict:
+    """ext: 형식 판단용 확장자 (업로드 후보는 sha 이름으로 저장되어 path에 확장자가 없다)"""
+    if (ext if ext is not None else path.suffix).lower() == ".mat":
         return _mat(path, var)
     with open(path, "rb") as f:
         data = f.read(TEXT_LIMIT + 1)
