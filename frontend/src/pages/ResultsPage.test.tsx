@@ -18,6 +18,9 @@ async function setup() {
   return { client, obj, job1, job2, other };
 }
 
+/** 결과 분석 기본 탭은 작업대라 표를 보려면 결과 표 탭으로 옮긴다 */
+const openTable = async () => userEvent.click(await screen.findByRole('tab', { name: '결과 표' }));
+
 function chartOption(testId: string) {
   return JSON.parse(screen.getByTestId(testId).getAttribute('data-option')!);
 }
@@ -29,6 +32,7 @@ describe('ResultsPage', () => {
     const { client, job1, job2 } = await setup();
     const spy = vi.spyOn(client, 'listRuns');
     renderApp({ route: ROUTE, client });
+    await openTable();
     const expected = job1.completed + job1.failed + job2.completed + job2.failed;
     await waitFor(() => expect(screen.getAllByTestId('run-row')).toHaveLength(expected));
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ fmuId: MOCK_FMU_ID, offset: 0, limit: 100 }));
@@ -39,6 +43,7 @@ describe('ResultsPage', () => {
     const { client, obj } = await setup();
     const spy = vi.spyOn(client, 'listRuns');
     renderApp({ route: ROUTE, client });
+    await openTable();
     await userEvent.click(await screen.findByRole('checkbox', { name: 'fuel' }));
     const header = await screen.findByRole('columnheader', { name: /fuel/ });
     expect(within(header).getByText(obj.codeHash.slice(0, 8))).toBeInTheDocument();
@@ -51,6 +56,7 @@ describe('ResultsPage', () => {
     const { client, obj } = await setup();
     const updated = await client.updateObjective(obj.id, { name: 'fuel', code: 'def evaluate(r, p):\n    return 3.0' });
     renderApp({ route: ROUTE, client });
+    await openTable();
     await userEvent.click(await screen.findByRole('checkbox', { name: 'fuel' }));
     const header = await screen.findByRole('columnheader', { name: /fuel/ });
     expect(within(header).getByText(updated.codeHash.slice(0, 8))).toBeInTheDocument();
@@ -60,6 +66,7 @@ describe('ResultsPage', () => {
   test('scatter plots parameter vs objective for ok runs', async () => {
     const { client, obj, job1, job2 } = await setup();
     renderApp({ route: ROUTE, client });
+    await openTable();
     await userEvent.click(await screen.findByRole('checkbox', { name: 'fuel' }));
     await userEvent.click(screen.getByRole('textbox', { name: 'X축' }));
     await userEvent.click(await screen.findByRole('option', { name: 'p' }));
@@ -94,6 +101,7 @@ describe('ResultsPage', () => {
     URL.createObjectURL = vi.fn((b: Blob) => { blob = b; return 'blob:x'; });
     URL.revokeObjectURL = vi.fn();
     renderApp({ route: ROUTE, client });
+    await openTable();
     await userEvent.click(await screen.findByRole('checkbox', { name: 'fuel' }));
     await screen.findByRole('columnheader', { name: /fuel/ });
     await userEvent.click(screen.getByRole('button', { name: 'CSV 내보내기' }));
@@ -120,6 +128,7 @@ describe('ResultsPage', () => {
     URL.createObjectURL = vi.fn((b: Blob) => { blob = b; return 'blob:x'; });
     URL.revokeObjectURL = vi.fn();
     renderApp({ route: ROUTE, client });
+    await openTable();
     await userEvent.click(await screen.findByRole('checkbox', { name: 'fuel' }));
     await screen.findByRole('columnheader', { name: /fuel/ });
     await userEvent.click(screen.getByRole('button', { name: 'CSV 내보내기' }));
@@ -140,6 +149,7 @@ describe('ResultsPage', () => {
     const variant = (await client.listVariants(MOCK_FMU_ID)).find(v => !v.isOriginal)!;
     const spy = vi.spyOn(client, 'listRuns');
     renderApp({ route: ROUTE, client });
+    await openTable();
     const before = (await screen.findAllByTestId('run-row')).length;
     expect(screen.getByRole('columnheader', { name: 'Resource 조합' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('textbox', { name: 'Resource 조합' }));

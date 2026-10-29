@@ -42,6 +42,8 @@ export function usePresetEditor<K extends PresetKind, F>(opts: {
   setName: (name: string) => void;
   menuLabel?: string;
   sticky?: boolean;
+  /** 진입 시 불러올 프리셋 id를 담은 쿼리 파라미터 이름 (기본 'preset') */
+  urlParam?: string;
 }): { menuBar: ReactNode; notice: ReactNode; modals: ReactNode } {
   const { kind, fmuId, form, ready, toConfig } = opts;
   const api = useApi();
@@ -92,8 +94,8 @@ export function usePresetEditor<K extends PresetKind, F>(opts: {
     setNotice(null);
   };
 
-  // ?preset=<id> 또는 ?fromJob=<id>로 들어오면 한 번 불러온다 (프리셋 관리·잡 모니터에서 연결)
-  const presetParam = searchParams.get('preset');
+  // ?preset=<id>(urlParam) 또는 ?fromJob=<id>로 들어오면 한 번 불러온다 (프리셋 관리·잡 모니터에서 연결)
+  const presetParam = searchParams.get(opts.urlParam ?? 'preset');
   const jobParam = searchParams.get('fromJob');
   const fromJob = useQuery({ queryKey: ['job', jobParam], queryFn: () => api.getJob(jobParam!), enabled: !!jobParam && !!loadJob });
   const initialLoaded = useRef(false);
@@ -149,6 +151,7 @@ export function usePresetEditor<K extends PresetKind, F>(opts: {
       qc.invalidateQueries({ queryKey: ['presets'] });
     },
   });
+  // 문서 전체에 걸리는 단축키라 한 화면에는 이 편집기를 하나만 둔다
   useHotkeys([['mod+S', save]], []);
 
   const menuBar = (

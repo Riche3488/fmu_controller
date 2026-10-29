@@ -9,7 +9,7 @@ import { presetSummary } from '../lib/presets';
 
 const NO_TRANSITION = { transitionProps: { duration: 0 } };
 
-// 대시보드는 FMU 설정 화면으로 열지 않는다
+// 대시보드는 설정 화면이 아니라 저장한 FMU의 결과 분석(작업대)으로 연다
 const SETUP_PATH: Record<Exclude<PresetKind, 'dashboard'>, string> = { optimization: 'optimize', batch: 'batch' };
 const KINDS: PresetKind[] = ['optimization', 'batch', 'dashboard'];
 
@@ -96,6 +96,9 @@ export function PresetsPage() {
                   <Table.Td><Text size="xs">{new Date(p.updatedAt).toLocaleString('ko-KR')}</Text></Table.Td>
                   <Table.Td>
                     <Group gap={4} wrap="nowrap" justify="end">
+                      {p.kind === 'dashboard' && source && (
+                        <Button size="compact-sm" onClick={() => navigate(`/fmus/${source.id}/results?dashboard=${p.id}`)}>열기</Button>
+                      )}
                       {p.kind !== 'dashboard' && <Menu position="bottom-end" shadow="md" {...NO_TRANSITION}>
                         <Menu.Target><Button size="compact-sm" disabled={targets.length === 0}>열기</Button></Menu.Target>
                         <Menu.Dropdown>

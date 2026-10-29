@@ -1,21 +1,24 @@
+// 결과 분석(⑤) 탭 내용: 결과 표, FMU 비교, Resource 조합 비교. 화면 조립은 workspace/ResultsStep.
 import {
-  Alert, Button, Card, Group, Loader, MultiSelect, Pagination, Select, Stack, Table, Tabs, Text, Title,
+  Alert, Button, Card, Group, Loader, MultiSelect, Pagination, Select, Stack, Table, Text,
 } from '@mantine/core';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
 import { useEchartsTheme } from '../theme';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
-import type { FmuSummary, Job, RunPage, RunRow } from '../api/types';
+import type { FmuSummary, RunPage, RunRow } from '../api/types';
 import { ObjectivePicker } from '../components/ObjectivePicker';
 import { useVariants } from '../components/ResourceGroupSection';
+import type { ResultsFilterState } from '../components/ResultsFilters';
 import { RunTable, type Sort } from '../components/RunTable';
 import { ScatterChart } from '../components/ScatterChart';
 import { TimeseriesChart } from '../components/TimeseriesChart';
+import { useSelection } from '../components/workbench/SelectionContext';
 import { boxStats, csvLine } from '../lib/stats';
 
 const PAGE_SIZE = 100;
+const TS_RUNS = 10;
 const ALL = 100000;
 
 function useObjectiveMeta(ids: string[]) {
@@ -47,25 +50,27 @@ function axisValue(r: RunRow, key: string): number | null {
   return r.objectives[key.slice(10)]?.value ?? null;
 }
 
-function FmuResults({ fmu }: { fmu: FmuSummary }) {
+/** 결과 표 탭: RunTable(서버 페이지네이션·정렬)·CSV·간단 산점도·선택 run 시계열. 선택은 작업대와 공유한다. */
+export function ResultsTable({ fmu, filter: f }: { fmu: FmuSummary; filter: ResultsFilterState }) {
   const api = useApi();
-  const [jobIds, setJobIds] = useState<string[]>([]);
-  const [variantIds, setVariantIds] = useState<string[]>([]);
-  const [status, setStatus] = useState<'ok' | 'failed' | null>(null);
-  const [objectiveIds, setObjectiveIds] = useState<string[]>([]);
+  const { selected, toggle } = useSelection();
   const [sort, setSort] = useState<Sort>({ by: 'index', dir: 'asc' });
-  const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<string[]>([]);
+  // 범위 필터가 바뀌면 1쪽으로 돌아간다 (목적함수 열만 바뀌면 그대로)
+  const rangeKey = JSON.stringify([f.jobIds, f.variantIds, f.status]);
+  const [pageAt, setPageAt] = useState({ key: rangeKey, page: 1 });
+  const page = pageAt.key === rangeKey ? pageAt.page : 1;
+  const setPage = (p: number) => setPageAt({ key: rangeKey, page: p });
   const [xKey, setXKey] = useState<string | null>(null);
   const [yKey, setYKey] = useState<string | null>(null);
   const [tsVars, setTsVars] = useState<string[] | null>(null);
+  const objectiveIds = f.objectiveIds;
   const objectives = useObjectiveMeta(objectiveIds);
 
   const jobs = useQuery({ queryKey: ['jobs', fmu.id], queryFn: () => api.listJobs({ fmuId: fmu.id }) });
   const variants = useVariants(fmu.id);
   const filter = {
-    fmuId: fmu.id, jobIds: jobIds.length ? jobIds : undefined, status: status ?? undefined, objectiveIds,
-    variantIds: variantIds.length ? variantIds : undefined,
+    fmuId: fmu.id, jobIds: f.jobIds.length ? f.jobIds : undefined, status: f.status ?? undefined, objectiveIds,
+    variantIds: f.variantIds.length ? f.variantIds : undefined,
   };
   const pageQuery = useQuery({
     queryKey: ['runs', 'results', filter, sort, page],
@@ -84,7 +89,8 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
   const codeHashes = pageQuery.data?.codeHashes ?? {};
   const recordVars = useMemo(() => [...new Set((jobs.data ?? []).flatMap(j => j.config.recordVariables))], [jobs.data]);
   const vars = tsVars ?? recordVars.slice(0, 1);
-  const toggle = (id: string) => setSelected(s => (s.includes(id) ? s.filter(x => x !== id) : s.length >= 10 ? s : [...s, id]));
+  // 작업대 브러시로 많이 고를 수 있으므로 이 차트는 앞 10개만 그린다
+  const tsRuns = selected.slice(0, TS_RUNS);
 
   const exportCsv = () => {
     // 값과 해시는 반드시 같은 응답에서 가져온다 (두 조회 사이에 코드가 바뀌어도 라벨이 어긋나지 않도록)
@@ -111,33 +117,17 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
 
   return (
     <Stack>
-      <Group align="end">
-        <MultiSelect label="잡 필터" placeholder="모든 잡" clearable w={360} value={jobIds}
-          onChange={v => { setJobIds(v); setPage(1); }} comboboxProps={{ transitionProps: { duration: 0 } }}
-          data={(jobs.data ?? []).map((j: Job) => ({ value: j.id, label: `${j.name} (${j.kind === 'batch' ? '배치' : '최적화'})` }))} />
-        {variantList.length > 1 && (
-          <MultiSelect label="Resource 조합" placeholder="모든 조합" clearable w={360} value={variantIds}
-            onChange={v => { setVariantIds(v); setPage(1); }} comboboxProps={{ transitionProps: { duration: 0 } }}
-            data={variantList.map(v => ({ value: v.id, label: v.label }))} />
-        )}
-        <Select label="상태" placeholder="전체" clearable w={140} value={status} data={['ok', 'failed']}
-          onChange={v => { setStatus(v as typeof status); setPage(1); }} comboboxProps={{ transitionProps: { duration: 0 } }} />
+      <Group justify="space-between">
+        <Group gap="xs">
+          {objectiveIds.length > 0 && <Text size="xs" c="blue">현재 목적함수 코드 기준으로 계산된 값입니다</Text>}
+          {objectiveIds.length > 0 && (pageQuery.isFetching || allQuery.isFetching) && <Loader size="xs" />}
+        </Group>
         <Button variant="default" onClick={exportCsv} disabled={!allQuery.data}>CSV 내보내기</Button>
       </Group>
-      <Card withBorder>
-        <Text size="sm" fw={500} mb="xs">표시할 목적함수</Text>
-        <ObjectivePicker value={objectiveIds} onChange={setObjectiveIds} />
-        {objectiveIds.length > 0 && (
-          <Group gap="xs" mt="xs">
-            <Text size="xs" c="blue">현재 목적함수 코드 기준으로 계산된 값입니다</Text>
-            {(pageQuery.isFetching || allQuery.isFetching) && <Loader size="xs" />}
-          </Group>
-        )}
-      </Card>
       {pageQuery.isError && <Alert color="red">{(pageQuery.error as Error).message}</Alert>}
       <RunTable rows={pageQuery.data?.items ?? []} paramNames={paramNames} objectives={objectives} codeHashes={codeHashes}
-        sort={sort} onSort={s => { setSort(s); setPage(1); }} selected={selected} onToggle={toggle} showJob={jobName}
-        variantLabel={variantList.length > 1 ? variantLabel : undefined} />
+        sort={sort} onSort={s => { setSort(s); setPage(1); }} selected={selected} onToggle={toggle} maxSelected={Infinity}
+        showJob={jobName} variantLabel={variantList.length > 1 ? variantLabel : undefined} />
       <Group justify="space-between">
         <Text size="xs" c="dimmed">총 {total.toLocaleString()}개 run</Text>
         <Pagination total={Math.max(1, Math.ceil(total / PAGE_SIZE))} value={page} onChange={setPage} size="sm" />
@@ -156,11 +146,11 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
 
       <Card withBorder>
         <Group mb="xs">
-          <Text size="sm" fw={500}>선택한 run 시계열 (최대 10개)</Text>
+          <Text size="sm" fw={500}>선택한 run 시계열 (앞 {TS_RUNS}개)</Text>
           <MultiSelect placeholder="변수" searchable data={recordVars} value={vars} onChange={setTsVars} w={420}
             comboboxProps={{ transitionProps: { duration: 0 } }} />
         </Group>
-        <TimeseriesChart vars={vars} runs={selected.map(id => {
+        <TimeseriesChart vars={vars} runs={tsRuns.map(id => {
           const r = allRows.find(x => x.id === id);
           return { runId: id, label: r ? `${jobName(r.jobId)}#${r.index}` : id };
         })} />
@@ -169,7 +159,7 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
   );
 }
 
-function FmuCompare({ fmu }: { fmu: FmuSummary }) {
+export function FmuCompare({ fmu }: { fmu: FmuSummary }) {
   const api = useApi();
   const fmus = useQuery({ queryKey: ['fmus'], queryFn: () => api.listFmus() });
   const [others, setOthers] = useState<string[]>([]);
@@ -260,7 +250,7 @@ function FmuCompare({ fmu }: { fmu: FmuSummary }) {
 }
 
 /** 같은 FMU의 resource 조합끼리 목적함수 분포 비교 */
-function VariantCompare({ fmu }: { fmu: FmuSummary }) {
+export function VariantCompare({ fmu }: { fmu: FmuSummary }) {
   const api = useApi();
   const [objectiveIds, setObjectiveIds] = useState<string[]>([]);
   const objectives = useObjectiveMeta(objectiveIds);
@@ -316,29 +306,6 @@ function VariantCompare({ fmu }: { fmu: FmuSummary }) {
           </Table>
         </Card>
       )}
-    </Stack>
-  );
-}
-
-export function ResultsPage() {
-  const { fmuId = '' } = useParams();
-  const api = useApi();
-  const fmu = useQuery({ queryKey: ['fmu', fmuId], queryFn: () => api.getFmu(fmuId) });
-  if (!fmu.data) return fmu.isError ? <Text c="red">{(fmu.error as Error).message}</Text> : null;
-  return (
-    <Stack>
-      <Title order={2}>결과 조회</Title>
-      <Text c="dimmed" size="sm">{fmu.data.modelName} · {fmu.data.fileName} — 누적 run {fmu.data.nRuns.toLocaleString()}개</Text>
-      <Tabs defaultValue="results" keepMounted={false}>
-        <Tabs.List>
-          <Tabs.Tab value="results">결과</Tabs.Tab>
-          <Tabs.Tab value="compare">FMU 비교</Tabs.Tab>
-          <Tabs.Tab value="variants">Resource 조합 비교</Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="results" pt="sm"><FmuResults fmu={fmu.data} /></Tabs.Panel>
-        <Tabs.Panel value="compare" pt="sm"><FmuCompare fmu={fmu.data} /></Tabs.Panel>
-        <Tabs.Panel value="variants" pt="sm"><VariantCompare fmu={fmu.data} /></Tabs.Panel>
-      </Tabs>
     </Stack>
   );
 }

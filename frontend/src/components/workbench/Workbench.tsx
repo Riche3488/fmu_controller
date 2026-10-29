@@ -61,6 +61,7 @@ function WorkbenchInner({ fmuId, filter }: { fmuId: string; filter: WorkbenchFil
       return { form: state, warnings };
     },
     defaultForm: initialState, setForm: setDash, name: '', setName: noop, menuLabel: '레이아웃 저장', sticky: false,
+    urlParam: 'dashboard',
   });
 
   const update = (fn: (d: DashboardState) => DashboardState) => setDash(fn);
