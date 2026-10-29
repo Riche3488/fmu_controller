@@ -5,9 +5,9 @@ import { renderApp } from './test/render';
 
 describe('App shell', () => {
   test.each([
-    ['FMU', 'FMU 라이브러리'],
-    ['목적함수', '목적함수'],
-    ['잡', '잡 목록'],
+    ['홈', 'FMU 라이브러리'],
+    ['목적함수 라이브러리', '목적함수'],
+    ['잡 전체', '잡 목록'],
   ])('nav "%s" opens page "%s"', async (nav, title) => {
     renderApp({ route: '/fmus' });
     await userEvent.click(screen.getByRole('link', { name: nav }));

@@ -5,10 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../api/client';
 import { JobStatusBadge } from '../components/JobStatusBadge';
 
-export function JobListPage() {
+/** 잡 표. fmuId가 있으면 그 FMU 잡만 보여 준다. */
+export function JobsTable({ fmuId }: { fmuId: string | null }) {
   const api = useApi();
   const navigate = useNavigate();
-  const [fmuId, setFmuId] = useState<string | null>(null);
   const fmus = useQuery({ queryKey: ['fmus'], queryFn: () => api.listFmus() });
   const jobs = useQuery({
     queryKey: ['jobs', fmuId], queryFn: () => api.listJobs(fmuId ? { fmuId } : {}), refetchInterval: 3000,
@@ -16,12 +16,7 @@ export function JobListPage() {
   const fmuName = (id: string) => fmus.data?.find(f => f.id === id)?.modelName ?? id;
 
   return (
-    <Stack>
-      <Group justify="space-between">
-        <Title order={2}>잡 목록</Title>
-        <Select placeholder="모든 FMU" clearable value={fmuId} onChange={setFmuId} w={280}
-          data={(fmus.data ?? []).map(f => ({ value: f.id, label: `${f.modelName} (${f.fileName})` }))} />
-      </Group>
+    <>
       <Table highlightOnHover>
         <Table.Thead>
           <Table.Tr>
@@ -49,6 +44,22 @@ export function JobListPage() {
         </Table.Tbody>
       </Table>
       {jobs.isSuccess && jobs.data.length === 0 && <Text c="dimmed">잡이 없습니다</Text>}
+    </>
+  );
+}
+
+export function JobListPage() {
+  const api = useApi();
+  const [fmuId, setFmuId] = useState<string | null>(null);
+  const fmus = useQuery({ queryKey: ['fmus'], queryFn: () => api.listFmus() });
+  return (
+    <Stack>
+      <Group justify="space-between">
+        <Title order={2}>잡 목록</Title>
+        <Select placeholder="모든 FMU" clearable value={fmuId} onChange={setFmuId} w={280}
+          data={(fmus.data ?? []).map(f => ({ value: f.id, label: `${f.modelName} (${f.fileName})` }))} />
+      </Group>
+      <JobsTable fmuId={fmuId} />
     </Stack>
   );
 }
