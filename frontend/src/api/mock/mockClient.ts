@@ -13,11 +13,11 @@ import type {
   ParamValue,
   Run,
   RunRow,
-  SweepParam,
   Variable,
 } from '../types';
 import fmusFixture from './fixtures/fmus.json';
 import variablesFixture from './fixtures/variables.json';
+import { expandValues } from '../../lib/sweep';
 
 export const MOCK_FMU_ID = (fmusFixture as FmuSummary[])[0].id;
 
@@ -41,12 +41,6 @@ export function mockCodeHash(code: string): string {
 
 function unit(seed: string): number {
   return hash32(seed) / 0xffffffff;
-}
-
-function expandValues(p: SweepParam): number[] {
-  if (p.mode === 'list') return p.values;
-  if (p.steps <= 1) return [p.min];
-  return Array.from({ length: p.steps }, (_, i) => p.min + ((p.max - p.min) * i) / (p.steps - 1));
 }
 
 function generateCases(req: BatchRequest): Record<string, number>[] {
