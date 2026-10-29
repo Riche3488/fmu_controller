@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Navigate, NavLink as RouterNavLink, Outlet, Route, Routes, useLocation, useMatch } from 'react-router-dom';
 import { useApi } from './api/client';
 import { ColorSchemeToggle } from './components/ColorSchemeToggle';
-import { FmuListPage } from './pages/FmuListPage';
+import { HomePage } from './pages/HomePage';
 import { JobListPage } from './pages/JobListPage';
 import { JobMonitorPage } from './pages/JobMonitorPage';
 import { ObjectiveEditorPage } from './pages/ObjectiveEditorPage';
@@ -38,7 +38,7 @@ function Layout() {
         </Group>
       </AppShell.Header>
       <AppShell.Navbar p="xs">
-        <NavLink component={RouterNavLink} to="/fmus" end label="홈" />
+        <NavLink component={RouterNavLink} to="/" end label="홈" />
         <Text size="xs" c="dimmed" fw={700} mt="sm" px="xs">FMU</Text>
         {(fmus.data ?? []).map(f => (
           <NavLink
@@ -70,8 +70,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/fmus" replace />} />
-        <Route path="/fmus" element={<FmuListPage />} />
+        <Route index element={<HomePage />} />
+        <Route path="/fmus" element={<Navigate to="/" replace />} />
         <Route path="/fmus/:fmuId" element={<WorkspaceLayout />}>
           <Route index element={<ModelStep />} />
           <Route path="resources" element={<ResourcesStep />} />

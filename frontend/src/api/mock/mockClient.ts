@@ -129,9 +129,9 @@ type JobState = {
   listeners: Set<Listener>;
 };
 
-export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
+export function createMockClient(opts: { tickMs?: number; empty?: boolean } = {}): ApiClient {
   const tickMs = opts.tickMs ?? 400;
-  const fmus = new Map<string, FmuSummary>((fmusFixture as FmuSummary[]).map(f => [f.id, { ...f }]));
+  const fmus = new Map<string, FmuSummary>((opts.empty ? [] : fmusFixture as FmuSummary[]).map(f => [f.id, { ...f }]));
   const variables = variablesFixture as Variable[];
   const objectives = new Map<string, Objective>();
   const jobs = new Map<string, JobState>();

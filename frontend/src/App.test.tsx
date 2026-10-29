@@ -5,18 +5,18 @@ import { renderApp } from './test/render';
 
 describe('App shell', () => {
   test.each([
-    ['홈', 'FMU 라이브러리'],
+    ['홈', 'WORKSPACE'],
     ['목적함수 라이브러리', '목적함수'],
     ['잡 전체', '잡 목록'],
   ])('nav "%s" opens page "%s"', async (nav, title) => {
     renderApp({ route: '/fmus' });
     await userEvent.click(screen.getByRole('link', { name: nav }));
-    expect(await screen.findByRole('heading', { level: 2, name: title })).toBeInTheDocument();
+    expect(await (title === 'WORKSPACE' ? screen.findByText(title) : screen.findByRole('heading', { level: 2, name: title }))).toBeInTheDocument();
   });
 
-  test('root redirects to FMU library', async () => {
+  test('root shows the home dashboard', async () => {
     renderApp({ route: '/' });
-    expect(await screen.findByRole('heading', { level: 2, name: 'FMU 라이브러리' })).toBeInTheDocument();
+    expect(await screen.findByText('WORKSPACE')).toBeInTheDocument();
   });
 
   test('header shows parallel backend', async () => {
