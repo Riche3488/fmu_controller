@@ -17,13 +17,14 @@ from sqlalchemy.orm import Session, sessionmaker
 from ..config import Settings
 from ..fmu.registry import get_extract_dir
 from ..fmu.simulate import SimOutcome, SimTask, run_simulation
-from ..models import Fmu, Job, ResourceFile, Run, Variable, Variant, utcnow
+from ..models import Fmu, Job, ResourceCandidate, ResourceFile, Run, Variable, Variant, utcnow
 from ..objectives.evaluator import Evaluator
 from ..parallel.base import ParallelExecutor, TaskCancelled
 from ..models import Objective
 from ..objectives import store
 from ..resources import variants
 from ..schemas import BatchRequest, JobOut, OptimizationRequest, RunOut, SimSettings
+from . import optimize
 from .optimize import Optimization
 from .sampling import generate_cases
 
@@ -135,14 +136,22 @@ class JobManager:
         return fmu
 
     @staticmethod
-    def _resolve_resources(session: Session, fmu_id: str, sel: dict[str, list[str]]) -> list[str]:
+    def _check_candidates(session: Session, fmu_id: str, path: str, ids: list[str]) -> None:
+        if not ids:
+            raise JobValidationError(f"resource 후보를 하나 이상 고르세요: {path}")
+        if not session.get(ResourceFile, (fmu_id, path)):
+            raise JobValidationError(f"resource 파일이 없습니다: {path}")
+        for cid in ids:
+            c = session.get(ResourceCandidate, cid)
+            if not c or c.fmu_id != fmu_id or c.path != path:
+                raise JobValidationError(f"{path}의 후보가 아닙니다: {cid}")
+
+    @classmethod
+    def _resolve_resources(cls, session: Session, fmu_id: str, sel: dict[str, list[str]]) -> list[str]:
         """resource 선택(path -> 후보 id 목록)의 직곱(path 정렬 순)을 variant id 목록으로. 선택이 없으면 원본 하나."""
         paths = sorted(sel)
         for path in paths:
-            if not sel[path]:
-                raise JobValidationError(f"resource 후보를 하나 이상 고르세요: {path}")
-            if not session.get(ResourceFile, (fmu_id, path)):
-                raise JobValidationError(f"resource 파일이 없습니다: {path}")
+            cls._check_candidates(session, fmu_id, path, sel[path])
         try:
             return [variants.ensure_variant(session, fmu_id, dict(zip(paths, combo))).id
                     for combo in itertools.product(*(sel[p] for p in paths))]
@@ -181,6 +190,13 @@ class JobManager:
     def submit_optimization(self, req: OptimizationRequest) -> Job:
         if req.algorithm == "cmaes" and len(req.objectives) > 1:
             raise JobValidationError("CMA-ES는 단일 목적만 지원합니다")
+        if req.algorithm == "gp" and not optimize.gp_available():
+            raise JobValidationError('GP를 쓰려면 torch를 설치하세요 (pip install -e "backend[gp]")')
+        search = {p: r.candidate_ids for p, r in req.resources.items() if r.mode == "search"}
+        if any(len(ids) < 2 for ids in search.values()):
+            raise JobValidationError("탐색할 후보를 2개 이상 고르세요")
+        if search and req.algorithm == "cmaes":
+            raise JobValidationError("CMA-ES는 파일 탐색(선택형 변수)을 지원하지 않습니다")
         for d in req.design_vars:
             if not d.min < d.max:
                 raise JobValidationError(f"설계 변수 {d.name}: 최솟값은 최댓값보다 작아야 합니다")
@@ -188,6 +204,8 @@ class JobManager:
         with self.session_factory() as s:
             self._validate_common(s, req.fmu_id, [d.name for d in req.design_vars] + list(req.fixed_params),
                                   req.record_variables)
+            for path, r in req.resources.items():
+                self._check_candidates(s, req.fmu_id, path, r.candidate_ids if r.mode == "search" else [r.candidate_id])
             codes: dict[str, str] = {}
             snapshot: dict[str, dict] = {}
             for o in req.objectives:
@@ -201,7 +219,11 @@ class JobManager:
                       total=req.n_trials, config=req.model_dump(mode="json", by_alias=True), objective_snapshot=snapshot)
             s.add(job)
             s.commit()
-        optimization = Optimization(req, codes, self.evaluator)
+        def resolve_variant(assignment: dict[str, str]) -> str:
+            with self.session_factory() as s:
+                return variants.ensure_variant(s, req.fmu_id, assignment).id
+
+        optimization = Optimization(req, codes, self.evaluator, resolve_variant)
 
         def target():
             self._set_running(job.id)

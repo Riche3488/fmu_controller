@@ -20,6 +20,8 @@ dependencies = [
 
 [project.optional-dependencies]
 ray = ["ray[default]==2.59.0"]
+# GP 베이지안 최적화 (Optuna GPSampler)
+gp = ["torch>=2.5"]
 test = ["pytest==9.2.0", "httpx==0.28.1"]
 
 [tool.pytest.ini_options]

@@ -91,7 +91,9 @@ def test_explicit_ray_failure_raises(monkeypatch):
 
 
 def test_health_reports_backend(client):
-    assert client.get("/api/health").json() == {"status": "ok", "parallelBackend": "pool"}
+    from app.jobs.optimize import gp_available
+
+    assert client.get("/api/health").json() == {"status": "ok", "parallelBackend": "pool", "gpAvailable": gp_available()}
 
 
 def test_runs_real_simulation(executor, extract_dir, tmp_path):

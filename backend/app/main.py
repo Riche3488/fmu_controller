@@ -12,6 +12,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .config import Settings
 from .db import init_db, make_engine, make_session_factory
 from .parallel.base import create_executors
+from .jobs import optimize
 from .jobs.runner import JobManager, mark_interrupted_jobs
 from .objectives.evaluator import Evaluator
 from .resources.migrate import migrate
@@ -56,7 +57,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/health", response_model=Health)
     def health():
-        return Health(status="ok", parallel_backend=app.state.executor.name)
+        return Health(status="ok", parallel_backend=app.state.executor.name, gp_available=optimize.gp_available())
 
     mount_frontend(app, settings.static_dir)
     return app

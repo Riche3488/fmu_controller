@@ -13,6 +13,7 @@ class CamelModel(BaseModel):
 class Health(CamelModel):
     status: str
     parallel_backend: str
+    gp_available: bool
 
 
 class Page[T](CamelModel):
@@ -187,11 +188,26 @@ class OptObjective(CamelModel):
     direction: Literal["minimize", "maximize"]
 
 
+class OptResourceFixed(CamelModel):
+    mode: Literal["fixed"]
+    candidate_id: str
+
+
+class OptResourceSearch(CamelModel):
+    mode: Literal["search"]
+    candidate_ids: list[str]
+
+
+OptResource = Annotated[OptResourceFixed | OptResourceSearch, Field(discriminator="mode")]
+
+
 class OptimizationRequest(RunSettingsBase):
     design_vars: list[DesignVar] = Field(min_length=1)
     objectives: list[OptObjective] = Field(min_length=1)
-    algorithm: Literal["tpe", "cmaes", "random", "nsga2"]
+    algorithm: Literal["tpe", "gp", "cmaes", "random", "nsga2"]
     n_trials: int = Field(ge=1)
+    # resource path -> 고정(후보 1개) 또는 탐색(최적화가 후보 중 선택)
+    resources: dict[str, OptResource] = {}
 
 
 class ResourceCandidateOut(CamelModel):
