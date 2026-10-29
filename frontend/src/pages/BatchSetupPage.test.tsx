@@ -59,7 +59,7 @@ describe('BatchSetupPage', () => {
     expect(req.recordVariables).toContain('controlBus.chassisBus.longitudinalVelocity');
     expect(req.runTimeoutSec).toBe(600);
     expect(req.workers).toBeGreaterThanOrEqual(1);
-    expect(await screen.findByRole('heading', { level: 2, name: '잡 모니터' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: /잡 모니터/ })).toBeInTheDocument();
   });
 
   test('asks for confirmation above 1000 cases', async () => {

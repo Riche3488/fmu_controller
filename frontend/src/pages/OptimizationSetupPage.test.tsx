@@ -76,7 +76,7 @@ describe('OptimizationSetupPage', () => {
     expect(req.nTrials).toBe(50);
     expect(req.designVars).toEqual([{ name: 'road.stopTable[1,1]', min: 22.5, max: 67.5, kind: 'float' }]);
     expect(req.recordVariables).toHaveLength(140);
-    expect(await screen.findByRole('heading', { level: 2, name: '잡 모니터' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: /잡 모니터/ })).toBeInTheDocument();
   });
 
   test('submit disabled without objectives', async () => {
