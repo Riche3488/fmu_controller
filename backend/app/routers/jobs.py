@@ -9,7 +9,7 @@ from sse_starlette.sse import EventSourceResponse
 from ..db import get_session
 from ..jobs.runner import ACTIVE, FmuNotFound, JobValidationError, job_out
 from ..models import Job
-from ..schemas import BatchRequest, JobOut
+from ..schemas import BatchRequest, JobOut, OptimizationRequest
 from .fmus import FMU_NOT_FOUND
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -36,6 +36,11 @@ def _submit(fn, req):
 @router.post("/batch", response_model=JobOut, status_code=201)
 def create_batch(req: BatchRequest, request: Request):
     return _submit(request.app.state.jobs.submit_batch, req)
+
+
+@router.post("/optimization", response_model=JobOut, status_code=201)
+def create_optimization(req: OptimizationRequest, request: Request):
+    return _submit(request.app.state.jobs.submit_optimization, req)
 
 
 @router.get("", response_model=list[JobOut])

@@ -19,7 +19,10 @@ from ..fmu.simulate import SimOutcome, SimTask, run_simulation
 from ..models import Fmu, Job, Run, Variable, utcnow
 from ..objectives.evaluator import Evaluator
 from ..parallel.base import ParallelExecutor, TaskCancelled
-from ..schemas import BatchRequest, JobOut, RunOut, SimSettings
+from ..models import Objective
+from ..objectives import store
+from ..schemas import BatchRequest, JobOut, OptimizationRequest, RunOut, SimSettings
+from .optimize import Optimization
 from .sampling import generate_cases
 
 log = logging.getLogger("app.jobs")
@@ -148,6 +151,40 @@ class JobManager:
             s.commit()
         specs = iter([CaseSpec(i, {**req.fixed_params, **c}) for i, c in enumerate(cases)])
         self._start(job, lambda: self._run_cases(job.id, req.fmu_id, req, specs))
+        return job
+
+    # ---------- 최적화 ----------
+    def submit_optimization(self, req: OptimizationRequest) -> Job:
+        if req.algorithm == "cmaes" and len(req.objectives) > 1:
+            raise JobValidationError("CMA-ES는 단일 목적만 지원합니다")
+        for d in req.design_vars:
+            if not d.min < d.max:
+                raise JobValidationError(f"설계 변수 {d.name}: 최솟값은 최댓값보다 작아야 합니다")
+        self._validate_sim(req.sim)
+        with self.session_factory() as s:
+            self._validate_common(s, req.fmu_id, [d.name for d in req.design_vars] + list(req.fixed_params),
+                                  req.record_variables)
+            codes: dict[str, str] = {}
+            snapshot: dict[str, dict] = {}
+            for o in req.objectives:
+                obj = s.get(Objective, o.objective_id)
+                if not obj:
+                    raise JobValidationError(f"목적함수를 찾을 수 없습니다: {o.objective_id}")
+                # 제출 시점 코드로 최적화한다 (실행 중 편집되어도 일관성 유지). 잡에는 해시만 기록
+                codes[obj.id], h = store.load(self.settings, obj.id)
+                snapshot[obj.id] = {"name": obj.name, "codeHash": h}
+            job = Job(id=new_id(), kind="optimization", name=req.name, fmu_id=req.fmu_id, status="queued",
+                      total=req.n_trials, config=req.model_dump(mode="json", by_alias=True), objective_snapshot=snapshot)
+            s.add(job)
+            s.commit()
+        optimization = Optimization(req, codes, self.evaluator)
+
+        def target():
+            self._set_running(job.id)
+            finished = self.run_cases(job.id, req.fmu_id, req, optimization.cases(CaseSpec), optimization.on_done)
+            self._finish(job.id, "done" if finished else "cancelled")
+
+        self._start(job, target)
         return job
 
     def _start(self, job: Job, target: Callable[[], None]) -> None:

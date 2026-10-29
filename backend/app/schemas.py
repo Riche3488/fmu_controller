@@ -170,3 +170,22 @@ class RunPage(CamelModel):
     total: int
     items: list[RunRow]
     code_hashes: dict[str, str]
+
+
+class DesignVar(CamelModel):
+    name: str
+    min: float
+    max: float
+    kind: Literal["float", "int"] = "float"
+
+
+class OptObjective(CamelModel):
+    objective_id: str
+    direction: Literal["minimize", "maximize"]
+
+
+class OptimizationRequest(RunSettingsBase):
+    design_vars: list[DesignVar] = Field(min_length=1)
+    objectives: list[OptObjective] = Field(min_length=1)
+    algorithm: Literal["tpe", "cmaes", "random", "nsga2"]
+    n_trials: int = Field(ge=1)
