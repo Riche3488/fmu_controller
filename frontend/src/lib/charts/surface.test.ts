@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { RunRow } from '../../api/types';
 import type { PanelSpec, WorkbenchData } from '../workbench';
 import { buildChart, isEmptyChart } from './index';
+import { smokeRender } from '../../test/echartsSmoke';
+import { SCALAR_BUILDERS } from './scalar';
 import { SURFACE_BUILDERS } from './surface';
 
 vi.mock('echarts-gl', () => ({}));
@@ -47,7 +49,7 @@ describe('surface charts', () => {
 
   it('contour: 40x40 heatmap(1600점)과 원 데이터 scatter', () => {
     const o = opt(buildChart(spec('contour', { x: P, y: Q, z: O }), data, ['r2']));
-    const heat = o.series.find((s: Any) => s.type === 'heatmap');
+    const heat = o.series.find((s: Any) => s.type === 'custom');
     expect(heat.data).toHaveLength(1600);
     const pts = o.series.find((s: Any) => s.type === 'scatter');
     expect(pts.data).toHaveLength(6);   // p가 없는 행 제외
@@ -119,5 +121,26 @@ describe('surface charts', () => {
     expect(o.series[0].data).toHaveLength(1600);
     expect(o.series[0].data[0]).toHaveLength(3);
     for (const k of ['grid3D', 'xAxis3D', 'yAxis3D', 'zAxis3D']) expect(o[k]).toBeDefined();
+  });
+
+  it('contour: 셀은 custom 사각형, visualMap이 그 시리즈에 걸린다', () => {
+    const o = opt(buildChart(spec('contour', { x: P, y: Q, z: O }), data, []));
+    expect(o.series.some((s: Any) => s.type === 'heatmap')).toBe(false);
+    expect(o.visualMap.seriesIndex).toContain(o.series.findIndex((s: Any) => s.type === 'custom'));
+    expect(o.visualMap.dimension).toBe(2);
+  });
+
+  it('2D 빌더 전부 실제 ECharts에서 setOption·렌더된다 (헤드리스 스모크)', () => {
+    const specs: PanelSpec[] = [
+      spec('scatter', { x: P, y: Q, color: O }), spec('scatterMatrix', { fields: [P, Q, O] }), spec('parallel', { fields: [P, Q, O] }),
+      spec('histogram', { x: P }), spec('boxViolin', { y: O, violin: true }), spec('corrHeatmap', { fields: [P, Q, O] }),
+      spec('radar', { fields: [P, Q, O] }), spec('bar', { y: O }),
+      spec('contour', { x: P, y: Q, z: O }), spec('tornado', { y: O, fields: [P, Q, R] }), spec('slice1d', { x: P, y: O }),
+    ];
+    for (const sp of specs) {
+      expect(sp.chart in SCALAR_BUILDERS || sp.chart in SURFACE_BUILDERS).toBe(true);
+      const r = opt(buildChart(sp, data, ['r1']));
+      expect(() => smokeRender(r), sp.chart).not.toThrow();
+    }
   });
 });

@@ -16,6 +16,7 @@ const NEG_COLOR = '#5470c6';
 const RAMP = ['#3b82f6', '#f5f5f5', '#f97316'];
 
 type Opt = Record<string, unknown>;
+type CellApi = { value: (i: number) => unknown; coord: (p: number[]) => number[]; visual: (k: string) => unknown };
 
 /** x·y·z 필드가 모두 있는 행 → 점 목록 */
 function xyzPoints(spec: PanelSpec, data: WorkbenchData) {
@@ -40,17 +41,31 @@ export const contour: ChartBuilder = (spec, data, selected) => {
   // 셀 항목에는 run id가 없다 (run id 계약: 격자 셀은 선택에 들어가지 않음)
   const cells = g.z.flatMap((r, j) => r.map((zv, i) => [g.xs[i], g.ys[j], zv]));
   const zs = pts.map(p => p.z);
+  // heatmap 시리즈는 category 축 둘이 필요해, 값 축 격자 위에 셀을 custom 사각형으로 그린다 (산점도 겹침·브러시 유지)
+  const dx = (g.xs[g.xs.length - 1] - g.xs[0]) / (GRID_N - 1) || 1;
+  const dy = (g.ys[g.ys.length - 1] - g.ys[0]) / (GRID_N - 1) || 1;
   return {
     tooltip: { trigger: 'item' },
     brush: { toolbox: ['rect', 'clear'], xAxisIndex: 0, yAxisIndex: 0 },
-    xAxis: { type: 'value', name: spec.x!.name, scale: true, min: g.xs[0], max: g.xs[g.xs.length - 1] },
-    yAxis: { type: 'value', name: spec.y!.name, scale: true, min: g.ys[0], max: g.ys[g.ys.length - 1] },
+    xAxis: { type: 'value', name: spec.x!.name, min: g.xs[0] - dx / 2, max: g.xs[g.xs.length - 1] + dx / 2 },
+    yAxis: { type: 'value', name: spec.y!.name, min: g.ys[0] - dy / 2, max: g.ys[g.ys.length - 1] + dy / 2 },
     visualMap: {
       type: 'continuous', dimension: 2, seriesIndex: [0, 1], min: minOf(zs), max: maxOf(zs),
       inRange: { color: RAMP }, text: [spec.z!.name, ''], right: 0, top: 'middle', calculable: false,
     },
     series: [
-      { type: 'heatmap', name: '보간', data: cells, silent: true },
+      {
+        type: 'custom', name: '보간', data: cells, silent: true, encode: { x: 0, y: 1 },
+        renderItem: (_: unknown, api: CellApi) => {
+          const cx = api.value(0) as number, cy = api.value(1) as number;
+          const [x0, y0] = api.coord([cx - dx / 2, cy - dy / 2]);
+          const [x1, y1] = api.coord([cx + dx / 2, cy + dy / 2]);
+          return {
+            type: 'rect', shape: { x: Math.min(x0, x1), y: Math.min(y0, y1), width: Math.abs(x1 - x0) + 0.5, height: Math.abs(y1 - y0) + 0.5 },
+            style: { fill: api.visual('color') as string },
+          };
+        },
+      },
       {
         type: 'scatter', name: 'run', symbolSize: 8, z: 3,
         data: pts.map(p => ({
