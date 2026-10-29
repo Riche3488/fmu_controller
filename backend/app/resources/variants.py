@@ -7,12 +7,13 @@ import threading
 import uuid
 from pathlib import Path
 
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
 from ..config import Settings
 from ..models import ResourceCandidate, Variant
+from ..paths import get_extract_dir, variant_dir
 
 ORIGINAL_LABEL = "원본"
 
@@ -44,32 +45,34 @@ def ensure_variant(session: Session, fmu_id: str, assignment: dict[str, str]) ->
     v = session.get(Variant, vid)
     if v:
         return v
-    v = Variant(id=vid, fmu_id=fmu_id, assignment={p: c.id for p, c in sorted(replaced.items())})
-    session.add(v)
-    try:
-        session.commit()
-    except IntegrityError:  # 다른 잡이 같은 조합을 동시에 만든 경우
-        session.rollback()
-        v = session.get(Variant, vid)
-    return v
+    # 다른 잡이 같은 조합을 동시에 만들 수 있다. IntegrityError → rollback은 호출자가 아직 commit하지 않은
+    # 작업까지 버리므로, 충돌을 무시하는 INSERT로 만든다.
+    session.execute(sqlite_insert(Variant).values(
+        id=vid, fmu_id=fmu_id, assignment={p: c.id for p, c in sorted(replaced.items())}).on_conflict_do_nothing())
+    session.commit()
+    return session.get(Variant, vid)
+
+
+def variant_labels(session: Session, fmu_id: str, vs: list[Variant]) -> dict[str, str]:
+    """variant id -> 표시 이름. 후보를 한 번에 읽어 만든다 (variant·path마다 쿼리하지 않는다)."""
+    cands = {c.id: c for c in session.scalars(select(ResourceCandidate).where(ResourceCandidate.fmu_id == fmu_id))}
+    names: dict[tuple[str, str], int] = {}
+    for c in cands.values():
+        names[(c.path, c.name)] = names.get((c.path, c.name), 0) + 1
+
+    def display(cid: str) -> str:
+        c = cands.get(cid)
+        if c is None:
+            return "?"
+        # 같은 path에 같은 이름의 후보가 또 있으면(예: 수정본을 원래 이름으로 여러 번 업로드) 해시 앞 8자를 붙인다
+        return f"{c.name}[{c.sha256[:8]}]" if names[(c.path, c.name)] > 1 else c.name
+
+    return {v.id: ", ".join(f"{posixpath.basename(p)}={display(v.assignment[p])}" for p in sorted(v.assignment))
+            or ORIGINAL_LABEL for v in vs}
 
 
 def variant_label(session: Session, v: Variant) -> str:
-    if not v.assignment:
-        return ORIGINAL_LABEL
-    parts = []
-    for path in sorted(v.assignment):
-        cand = session.get(ResourceCandidate, v.assignment[path])
-        parts.append(f"{posixpath.basename(path)}={candidate_display_name(session, cand) if cand else '?'}")
-    return ", ".join(parts)
-
-
-def candidate_display_name(session: Session, cand: ResourceCandidate) -> str:
-    """같은 path에 같은 이름의 후보가 또 있으면(예: 수정본을 원래 이름으로 여러 번 업로드) 해시 앞 8자를 붙인다"""
-    dup = session.scalar(select(func.count()).select_from(ResourceCandidate).where(
-        ResourceCandidate.fmu_id == cand.fmu_id, ResourceCandidate.path == cand.path,
-        ResourceCandidate.name == cand.name, ResourceCandidate.id != cand.id))
-    return f"{cand.name}[{cand.sha256[:8]}]" if dup else cand.name
+    return variant_labels(session, v.fmu_id, [v])[v.id]
 
 
 _locks: dict[str, threading.Lock] = {}
@@ -93,13 +96,12 @@ def materialize(settings: Settings, session: Session, v: Variant) -> Path:
 
     원본 폴더를 하드링크(불가하면 복사)로 복제하고, 교체 파일은 링크를 끊은 뒤 실제 복사한다
     (하드링크된 원본 파일을 덮어쓰면 원본이 바뀌기 때문)."""
-    from ..fmu.registry import get_extract_dir
-    from .catalog import candidate_path
+    from .catalog import candidate_path  # catalog가 이 모듈을 import한다
 
     src = get_extract_dir(settings, v.fmu_id)
     if not v.assignment:
         return src
-    dest = settings.data_dir / "variants" / v.id
+    dest = variant_dir(settings, v.id)
     if dest.is_dir():
         return dest
     with _lock(v.id):

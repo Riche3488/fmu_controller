@@ -1,54 +1,16 @@
-# React + TypeScript + Vite
+# FMU Controller — 프론트엔드
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Mantine + ECharts + Monaco (Vite). 앱 전체 설명과 실행 방법은 저장소 루트의 `README.md`, 개발 규칙은 `CLAUDE.md`를 보세요.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```powershell
+npm install
+npm run dev     # /api 는 FMUC_API(기본 http://127.0.0.1:8000)로 프록시
+npm test        # vitest (mock client로 렌더)
+npx tsc -b      # 타입체크
+npm run build   # dist/ → 백엔드가 정적 파일로 서빙
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+백엔드 없이 UI만 볼 때는 도메인별로 mock을 켭니다: `$env:VITE_API_FMUS='mock'` (`FMUS`, `RESOURCES`, `OBJECTIVES`, `JOBS`, `RUNS`).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+- `src/api/types.ts` — API 계약. 백엔드 `backend/app/schemas.py`와 같은 형태를 유지합니다.
+- `src/api/http/` 실서버 클라이언트, `src/api/mock/` 인메모리 클라이언트 (테스트·UI 개발용).

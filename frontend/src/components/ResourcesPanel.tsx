@@ -22,7 +22,11 @@ function CandidateRows({ fmuId, res, onPreview }: {
   const api = useApi();
   const qc = useQueryClient();
   const [notice, setNotice] = useState<{ color: string; text: string } | null>(null);
-  const refresh = () => qc.invalidateQueries({ queryKey: ['resources', fmuId] });
+  // 후보 삭제는 그 후보를 쓰던 variant도 지운다
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['resources', fmuId] });
+    qc.invalidateQueries({ queryKey: ['variants', fmuId] });
+  };
   const upload = useMutation({
     mutationFn: (file: File) => api.uploadCandidate(fmuId, res.path, file),
     onSuccess: c => {

@@ -7,7 +7,7 @@ import shutil
 import threading
 import time
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -15,14 +15,13 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from ..config import Settings
-from ..fmu.registry import get_extract_dir
 from ..fmu.simulate import SimOutcome, SimTask, run_simulation
-from ..models import Fmu, Job, ResourceCandidate, ResourceFile, Run, Variable, Variant, utcnow
+from ..models import Fmu, Job, Objective, ResourceCandidate, ResourceFile, Run, Variable, Variant, utcnow
+from ..objectives import store
 from ..objectives.evaluator import Evaluator
 from ..parallel.base import ParallelExecutor, TaskCancelled
-from ..models import Objective
-from ..objectives import store
-from ..resources import variants
+from ..paths import get_extract_dir
+from ..resources import catalog, variants
 from ..schemas import BatchRequest, JobOut, OptimizationRequest, RunOut, SimSettings
 from . import optimize
 from .optimize import Optimization
@@ -173,7 +172,8 @@ class JobManager:
         except ValueError as e:
             raise JobValidationError(str(e)) from e
         self._validate_sim(req.sim)
-        with self.session_factory() as s:
+        # 후보 검증 ~ 잡 commit 사이에 후보가 삭제되지 않도록 한다
+        with catalog.candidates_lock, self.session_factory() as s:
             self._validate_common(s, req.fmu_id, [p.name for p in req.params] + list(req.fixed_params), req.record_variables)
             variant_ids = self._resolve_resources(s, req.fmu_id, req.resources)
             job = Job(id=new_id(), kind="batch", name=req.name, fmu_id=req.fmu_id, status="queued",
@@ -184,7 +184,7 @@ class JobManager:
         # 파라미터 케이스(바깥) × resource 조합(안쪽)
         specs = iter([CaseSpec(i, {**req.fixed_params, **c}, vid)
                       for i, (c, vid) in enumerate(itertools.product(cases, variant_ids))])
-        self._start(job, lambda: self._run_cases(job.id, req.fmu_id, req, specs))
+        self._start(job, lambda: self._run_cases(job.id, req.fmu_id, req, specs, variant_ids))
         return job
 
     # ---------- 최적화 ----------
@@ -202,7 +202,7 @@ class JobManager:
             if not d.min < d.max:
                 raise JobValidationError(f"설계 변수 {d.name}: 최솟값은 최댓값보다 작아야 합니다")
         self._validate_sim(req.sim)
-        with self.session_factory() as s:
+        with catalog.candidates_lock, self.session_factory() as s:
             self._validate_common(s, req.fmu_id, [d.name for d in req.design_vars] + list(req.fixed_params),
                                   req.record_variables)
             for path, r in req.resources.items():
@@ -289,23 +289,38 @@ class JobManager:
             return run
 
     def run_cases(self, job_id: str, fmu_id: str, req, cases: Iterator[CaseSpec],
-                  on_done: Callable[[CaseSpec, Run], None] | None = None) -> bool:
+                  on_done: Callable[[CaseSpec, Run], None] | None = None, prepare: Iterable[str] = ()) -> bool:
         """케이스들을 병렬 실행. cases는 지연 생성 가능(최적화 ask). 취소되면 False.
 
         모든 잡이 공유하는 슬롯(_slots)을 얻은 뒤에만 제출하므로 제출 시각 ≈ 시작 시각이다
-        (큐 대기 시간이 run 타임아웃에 포함되지 않는다)."""
+        (큐 대기 시간이 run 타임아웃에 포함되지 않는다).
+        prepare: 미리 실행 폴더를 만들 variant id들 (실행 도중 폴더 복사로 결과 수집이 멈추지 않도록)."""
         ctx = self._jobs[job_id]
-        variant_dirs: dict[str | None, str] = {None: str(get_extract_dir(self.settings, fmu_id))}
+        variant_dirs: dict[str | None, str | Exception] = {None: str(get_extract_dir(self.settings, fmu_id))}
 
         def variant_dir(vid: str | None) -> str:
-            """variant 실행 폴더 (잡 스레드에서 처음 쓸 때 만든다)"""
+            """variant 실행 폴더 (처음 쓸 때 만든다). 실패도 기억해 같은 variant의 다른 케이스가 다시 복사하지 않는다."""
             if vid not in variant_dirs:
-                with self.session_factory() as s:
-                    v = s.get(Variant, vid)
-                    if v is None:
-                        raise RuntimeError(f"variant를 찾을 수 없습니다: {vid}")
-                    variant_dirs[vid] = str(variants.materialize(self.settings, s, v))
-            return variant_dirs[vid]
+                try:
+                    with self.session_factory() as s:
+                        v = s.get(Variant, vid)
+                        if v is None:
+                            raise RuntimeError(f"variant를 찾을 수 없습니다: {vid}")
+                        variant_dirs[vid] = str(variants.materialize(self.settings, s, v))
+                except Exception as e:
+                    variant_dirs[vid] = e
+            d = variant_dirs[vid]
+            if isinstance(d, Exception):
+                raise d.with_traceback(None)  # 재사용하는 예외에 traceback이 쌓이지 않게
+            return d
+
+        for vid in prepare:
+            if ctx.cancel.is_set():
+                return False
+            try:
+                variant_dir(vid)
+            except Exception:  # 해당 케이스를 제출할 때 실패로 기록된다
+                log.exception("job %s: variant %s could not be prepared", job_id, vid)
         results_dir = self.settings.data_dir / "results" / job_id
         limit = max(1, min(req.workers, self.executor.max_workers))
         inflight: dict[Any, _Inflight] = {}
@@ -349,7 +364,7 @@ class JobManager:
                         submit(case)
                     except Exception as e:  # variant 폴더 준비 실패 등: 이 케이스만 실패로 기록하고 계속
                         self._slots.release()
-                        log.exception("job %s: case %s could not be submitted", job_id, case.index)
+                        log.warning("job %s: case %s could not be submitted: %s", job_id, case.index, e)
                         run = self._record(job_id, fmu_id, case, new_id(), None,
                                            f"{RESOURCE_PREP_ERROR}: {type(e).__name__}: {e}", "")
                         if on_done:
@@ -392,9 +407,9 @@ class JobManager:
             for h in list(inflight):
                 drop(h)
 
-    def _run_cases(self, job_id: str, fmu_id: str, req, cases: Iterator[CaseSpec]) -> None:
+    def _run_cases(self, job_id: str, fmu_id: str, req, cases: Iterator[CaseSpec], prepare: Iterable[str]) -> None:
         self._set_running(job_id)
-        finished = self.run_cases(job_id, fmu_id, req, cases)
+        finished = self.run_cases(job_id, fmu_id, req, cases, prepare=prepare)
         self._finish(job_id, "done" if finished else "cancelled")
 
     # ---------- 제어 ----------

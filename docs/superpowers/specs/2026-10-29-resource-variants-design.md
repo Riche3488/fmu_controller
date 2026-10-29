@@ -58,7 +58,7 @@ FMU는 `resources/` 아래 외부 파일(주행 사이클 `.mat`, 타이어 `.ti
 ## 실행 방식
 
 - variant 폴더: `data/variants/<variant_id>/` = 원본 압축해제 폴더의 복제 + 교체 파일 덮어쓰기. 원본 variant는 원본 압축해제 폴더를 그대로 쓴다.
-- 잡 스레드가 run을 제출하기 전에 필요한 variant 폴더를 만든다 (워커는 경로만 받는다 → Ray/Pool 모두 그대로). 생성은 임시 폴더 → rename으로 원자적, variant별 락으로 중복 생성 방지, 이미 있으면 재사용.
+- 잡 스레드가 run을 제출하기 전에 필요한 variant 폴더를 만든다 (워커는 경로만 받는다 → Ray/Pool 모두 그대로). 생성은 임시 폴더 → rename으로 원자적, variant별 락으로 중복 생성 방지, 이미 있으면 재사용. (구현: 배치는 실행 전에 모든 조합 폴더를 미리 만들고, 준비에 실패한 조합은 잡 안에서 기억해 다시 복사하지 않는다.)
 - `SimTask.extract_dir`에 variant 폴더를 넘긴다. 나머지 시뮬레이션 로직(작업 디렉터리 분리, 검증 등)은 동일.
 - 복제 방식은 빌더 재량: 하드링크(같은 볼륨)로 공간을 아끼되, **같은 워커 프로세스가 서로 다른 variant의 DLL을 연달아 로드해도 결과가 섞이지 않는지** 실제 FMU 테스트로 확인하고, 문제가 있으면 `binaries/`는 실제 복사.
 - FMU 삭제(기존 규칙: 잡이 있으면 409) 시 후보 파일·variant 폴더도 지운다.
@@ -69,7 +69,7 @@ FMU는 `resources/` 아래 외부 파일(주행 사이클 `.mat`, 타이어 `.ti
 - `POST /api/fmus/{id}/resources/candidates` (multipart: `path`, `file`) → 후보 생성 또는 기존 후보 반환. 원본과 확장자가 다르면(대소문자 무시) 400. 없는 path면 404.
 - `DELETE /api/fmus/{id}/resources/candidates/{cid}` → 원본은 400, run이 있는 variant에서 쓰이면 409.
 - `GET /api/fmus/{id}/resources/candidates/{cid}/preview[?var=<name>]`
-  - 텍스트(앞 8KB에 NUL 없음, UTF-8 → 실패 시 cp949 → latin-1 디코드): `{kind:'text', text, truncated}` — 최대 256KB.
+  - 텍스트(앞 8KB에 NUL 없음, UTF-8 → 실패 시 cp949 → latin-1 디코드): `{kind:'text', text, truncated}` — 최대 256KB. 잘린 경우 인코딩마다 끝 1~3바이트를 버려 가며 디코드한다. `.mat` 1×N 행 벡터는 N×1 열로 바꿔 그린다.
   - `.mat`(scipy로 읽히는 v4/v5): `{kind:'mat', variables:[{name, shape, dtype}]}`; `var`를 주면 해당 숫자 2D 배열을 최대 2000행으로 줄여 `{kind:'mat', variables, plot:{name, rows}}` (첫 열 x, 나머지 열 y).
   - 그 외(v7.3 mat 포함): `{kind:'binary', note}`.
 - `GET /api/fmus/{id}/variants` → variant 목록(id, label, assignment, nRuns).

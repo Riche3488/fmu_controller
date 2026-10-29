@@ -137,6 +137,11 @@ class BatchRequest(RunSettingsBase):
     # resource path -> 후보 id 목록 (파라미터 케이스와 직곱)
     resources: dict[str, list[str]] = {}
 
+    @field_validator("resources")
+    @classmethod
+    def _dedupe_candidates(cls, v: dict[str, list[str]]) -> dict[str, list[str]]:
+        return {p: list(dict.fromkeys(ids)) for p, ids in v.items()}
+
 
 class JobOut(CamelModel):
     id: str
@@ -196,6 +201,11 @@ class OptResourceFixed(CamelModel):
 class OptResourceSearch(CamelModel):
     mode: Literal["search"]
     candidate_ids: list[str]
+
+    @field_validator("candidate_ids")
+    @classmethod
+    def _dedupe(cls, v: list[str]) -> list[str]:
+        return list(dict.fromkeys(v))
 
 
 OptResource = Annotated[OptResourceFixed | OptResourceSearch, Field(discriminator="mode")]

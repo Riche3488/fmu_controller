@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ..config import Settings
 from ..models import Fmu, ResourceCandidate, ResourceFile, Run, Variable, Variant
+from ..paths import fmu_file, get_extract_dir
 from ..resources import catalog
 
 INVALID_FMU = "유효한 FMU 파일이 아닙니다"
@@ -21,14 +22,6 @@ CHUNK = 1 << 20
 
 class InvalidFmu(ValueError):
     pass
-
-
-def fmu_file(settings: Settings, fmu_id: str) -> Path:
-    return settings.data_dir / "fmus" / f"{fmu_id}.fmu"
-
-
-def get_extract_dir(settings: Settings, fmu_id: str) -> Path:
-    return settings.data_dir / "extract" / fmu_id
 
 
 def _parse_start(type_name: str, raw):

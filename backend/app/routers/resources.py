@@ -93,6 +93,8 @@ def preview_candidate(fmu_id: str, cid: str, request: Request, var: str | None =
 def list_variants(fmu_id: str, session: Session = Depends(get_session)):
     get_fmu_or_404(session, fmu_id)
     counts = catalog.run_counts(session, fmu_id)
-    return [VariantOut(id=v.id, fmu_id=v.fmu_id, label=variants.variant_label(session, v), assignment=v.assignment,
+    vs = _fmu_variants(session, fmu_id)
+    labels = variants.variant_labels(session, fmu_id, vs)
+    return [VariantOut(id=v.id, fmu_id=v.fmu_id, label=labels[v.id], assignment=v.assignment,
                        is_original=not v.assignment, n_runs=counts.get(v.id, 0))
-            for v in _fmu_variants(session, fmu_id)]
+            for v in vs]

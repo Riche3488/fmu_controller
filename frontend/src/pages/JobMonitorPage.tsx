@@ -9,7 +9,7 @@ import { BestTrialCard } from '../components/BestTrialCard';
 import { CandidateBarChart } from '../components/CandidateBarChart';
 import { JobStatusBadge } from '../components/JobStatusBadge';
 import { ObjectivePicker } from '../components/ObjectivePicker';
-import { useResources } from '../components/ResourceGroupSection';
+import { useResources, useVariants } from '../components/ResourceGroupSection';
 import { RunTable, type Sort } from '../components/RunTable';
 import { ScatterChart } from '../components/ScatterChart';
 import { StaleSnapshotAlert } from '../components/StaleSnapshotAlert';
@@ -113,7 +113,7 @@ export function JobMonitorPage() {
     enabled: !!j && objectivesList.isSuccess,
   });
   const fmuId = j?.fmuId ?? '';
-  const variants = useQuery({ queryKey: ['variants', fmuId], queryFn: () => api.listVariants(fmuId), enabled: !!fmuId });
+  const variants = useVariants(fmuId);
   const resourceFiles = useResources(fmuId);
   const cancel = useMutation({ mutationFn: () => api.cancelJob(jobId), onSuccess: d => qc.setQueryData(['job', jobId], d) });
 
@@ -136,6 +136,10 @@ export function JobMonitorPage() {
   const searchFiles = optConfig
     ? (resourceFiles.data ?? []).filter(f => optConfig.resources?.[f.path]?.mode === 'search')
     : [];
+  const searchIds = (path: string) => {
+    const r = optConfig?.resources?.[path];
+    return r?.mode === 'search' ? r.candidateIds : [];
+  };
   const barObjectiveId = barObjective && objectiveIds.includes(barObjective) ? barObjective : objectiveIds[0];
   const barDirection = optConfig?.objectives.find(o => o.objectiveId === barObjectiveId)?.direction ?? 'minimize';
 
@@ -190,7 +194,8 @@ export function JobMonitorPage() {
           {searchFiles.map(f => (
             <div key={f.path}>
               <Text size="xs" ff="monospace" c="dimmed">{f.path}</Text>
-              <CandidateBarChart rows={rows} variants={variantList} file={f} objectiveId={barObjectiveId} direction={barDirection} />
+              <CandidateBarChart rows={rows} variants={variantList} file={f} candidateIds={searchIds(f.path)}
+                objectiveId={barObjectiveId} direction={barDirection} />
             </div>
           ))}
         </Card>

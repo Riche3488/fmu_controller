@@ -1,9 +1,15 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWith } from '../test/render';
 import { createMockClient, MOCK_FMU_ID, MOCK_NEDC_PATH, MOCK_TIR_PATH } from '../api/mock/mockClient';
+import { useVariants } from './ResourceGroupSection';
 import { ResourcesPanel } from './ResourcesPanel';
+
+function VariantsProbe() {
+  useVariants(MOCK_FMU_ID);
+  return null;
+}
 
 function setup() {
   const client = createMockClient();
@@ -75,5 +81,18 @@ describe('ResourcesPanel', () => {
     await within(list).findByText('del.mat');
     await userEvent.click(within(list).getByRole('button', { name: '삭제' }));
     await waitFor(() => expect(within(list).queryByText('del.mat')).not.toBeInTheDocument());
+  });
+
+  test('uploading or deleting a candidate refreshes the variant list', async () => {
+    const client = createMockClient();
+    const listVariants = vi.spyOn(client, 'listVariants');
+    renderWith(<><ResourcesPanel fmuId={MOCK_FMU_ID} /><VariantsProbe /></>, { client });
+    const list = await expand(MOCK_NEDC_PATH);
+    await waitFor(() => expect(listVariants).toHaveBeenCalledTimes(1));
+    await userEvent.upload(screen.getByTestId(`upload-${MOCK_NEDC_PATH}`), new File(['v'], 'v.mat'));
+    await within(list).findByText('v.mat');
+    await waitFor(() => expect(listVariants).toHaveBeenCalledTimes(2));
+    await userEvent.click(within(list).getByRole('button', { name: '삭제' }));
+    await waitFor(() => expect(listVariants).toHaveBeenCalledTimes(3));
   });
 });

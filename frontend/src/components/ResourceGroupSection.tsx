@@ -43,7 +43,12 @@ export function searchInvalid(sel: Record<string, OptResource>): boolean {
 
 export function useResources(fmuId: string) {
   const api = useApi();
-  return useQuery({ queryKey: ['resources', fmuId], queryFn: () => api.listResources(fmuId) });
+  return useQuery({ queryKey: ['resources', fmuId], queryFn: () => api.listResources(fmuId), enabled: !!fmuId });
+}
+
+export function useVariants(fmuId: string) {
+  const api = useApi();
+  return useQuery({ queryKey: ['variants', fmuId], queryFn: () => api.listVariants(fmuId), enabled: !!fmuId });
 }
 
 /** 배치용 Resource 그룹: 파일마다 후보를 여러 개 체크 (기본 원본, 최소 1개) */

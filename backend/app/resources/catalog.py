@@ -1,9 +1,9 @@
 """resource 파일 색인과 후보 파일 관리. 후보는 (fmu_id, path, 내용 sha256)으로 식별한다."""
 import hashlib
-import json
 import os
 import shutil
 import tempfile
+import threading
 from pathlib import Path, PurePosixPath
 from typing import BinaryIO
 
@@ -12,9 +12,13 @@ from sqlalchemy.orm import Session
 
 from ..config import Settings
 from ..models import Job, ResourceCandidate, ResourceFile, Run, Variant
+from ..paths import get_extract_dir, variant_dir
 from . import variants
 
 CHUNK = 1 << 20
+
+# 후보 삭제와 잡 제출(후보 검증 ~ 잡 commit)을 직렬화한다. 둘 다 이 프로세스 안에서만 일어난다.
+candidates_lock = threading.Lock()
 
 
 def candidate_id(fmu_id: str, path: str, sha: str) -> str:
@@ -52,7 +56,7 @@ def index_resources(session: Session, fmu_id: str, extract_dir: Path) -> None:
 def remove_variant_dir(settings: Settings, vid: str) -> None:
     """먼저 이름을 바꾼 뒤 지운다. 이름을 못 바꾸면(파일 사용 중) 폴더를 온전히 남긴다 —
     variant id는 내용으로 정해지므로 같은 조합이 다시 생기면 그대로 재사용해도 된다."""
-    d = settings.data_dir / "variants" / vid
+    d = variant_dir(settings, vid)
     if not d.exists():
         return
     trash = d.with_name(f".trash-{vid}-{os.getpid()}-{id(d):x}")
@@ -66,8 +70,6 @@ def remove_variant_dir(settings: Settings, vid: str) -> None:
 def candidate_path(settings: Settings, cand: ResourceCandidate) -> Path:
     """후보 파일의 실제 위치: 원본은 압축해제 폴더, 업로드 후보는 data/resources/<fmu_id>/<sha256>."""
     if cand.is_original:
-        from ..fmu.registry import get_extract_dir
-
         return get_extract_dir(settings, cand.fmu_id) / "resources" / Path(*cand.path.split("/"))
     return settings.data_dir / "resources" / cand.fmu_id / cand.sha256
 
@@ -153,15 +155,33 @@ def add_candidate(session: Session, settings: Settings, fmu_id: str, path: str, 
         tmp_path.unlink(missing_ok=True)
 
 
+def config_candidate_ids(config: dict) -> set[str]:
+    """잡 설정(BatchRequest/OptimizationRequest JSON)이 참조하는 후보 id"""
+    ids: set[str] = set()
+    for sel in (config.get("resources") or {}).values():
+        if isinstance(sel, list):  # 배치: 후보 id 목록
+            ids.update(sel)
+        elif isinstance(sel, dict):  # 최적화: 고정(candidateId) 또는 탐색(candidateIds)
+            ids.update(sel.get("candidateIds") or [])
+            if sel.get("candidateId"):
+                ids.add(sel["candidateId"])
+    return ids
+
+
 def delete_candidate(session: Session, settings: Settings, fmu_id: str, cand: ResourceCandidate) -> None:
     if cand.is_original:
         raise OriginalCandidate(ORIGINAL_DELETE_ERROR)
+    with candidates_lock:
+        _delete_candidate(session, settings, fmu_id, cand)
+
+
+def _delete_candidate(session: Session, settings: Settings, fmu_id: str, cand: ResourceCandidate) -> None:
     fmu_variants = list(session.scalars(select(Variant).where(Variant.fmu_id == fmu_id)))
     counts = run_counts(session, fmu_id)
     if candidate_runs(cand, fmu_variants, counts):
         raise CandidateInUse(IN_USE_ERROR)
     active = session.scalars(select(Job).where(Job.fmu_id == fmu_id, Job.status.in_(("queued", "running"))))
-    if any(cand.id in json.dumps(j.config) for j in active):
+    if any(cand.id in config_candidate_ids(j.config) for j in active):
         raise CandidateInUse(ACTIVE_JOB_ERROR)
     unused = [v for v in fmu_variants if v.assignment.get(cand.path) == cand.id]
     for v in unused:

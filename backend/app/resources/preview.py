@@ -39,20 +39,22 @@ def _mat(path: Path, var: str | None) -> dict:
         if arr.dtype.kind not in "fiub" or arr.ndim > 2 or arr.size == 0:
             raise PreviewError(NOT_NUMERIC)
         arr = arr.astype(float)
-        if arr.ndim == 1:
-            arr = arr[:, None]
+        if arr.ndim == 1 or arr.shape[0] == 1:  # MATLAB은 벡터를 1xN 행으로 저장한다 → 열 하나로
+            arr = arr.reshape(-1, 1)
         if len(arr) > MAX_ROWS:
             arr = arr[np.unique(np.linspace(0, len(arr) - 1, MAX_ROWS).round().astype(int))]
         out["plot"] = {"name": var, "rows": [[_clean(v) for v in row] for row in arr]}
     return out
 
 
-def _decode(data: bytes) -> str:
+def _decode(data: bytes, truncated: bool) -> str:
+    # 잘린 데이터는 끝이 멀티바이트 문자 중간일 수 있어, 인코딩마다 끝 1~3바이트를 버려 가며 시도한다
     for enc in ("utf-8", "cp949"):
-        try:
-            return data.decode(enc)
-        except UnicodeDecodeError:
-            continue
+        for cut in range(4 if truncated else 1):
+            try:
+                return data[:len(data) - cut].decode(enc)
+            except UnicodeDecodeError:
+                continue
     return data.decode("latin-1")
 
 
@@ -65,14 +67,4 @@ def preview(path: Path, var: str | None = None, ext: str | None = None) -> dict:
     if b"\0" in data[:SNIFF]:
         return {"kind": "binary", "note": BINARY_NOTE}
     truncated = len(data) > TEXT_LIMIT
-    data = data[:TEXT_LIMIT]
-    if truncated:
-        # 잘린 지점이 멀티바이트 문자 중간이면 버린다
-        for cut in range(4):
-            try:
-                data[:len(data) - cut].decode("utf-8")
-                data = data[:len(data) - cut]
-                break
-            except UnicodeDecodeError:
-                continue
-    return {"kind": "text", "text": _decode(data), "truncated": truncated}
+    return {"kind": "text", "text": _decode(data[:TEXT_LIMIT], truncated), "truncated": truncated}

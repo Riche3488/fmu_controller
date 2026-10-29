@@ -151,6 +151,7 @@ describe('JobListPage', () => {
     const client = createMockClient({ tickMs: 5 });
     const obj = await client.createObjective({ name: 'fuel', code: 'def evaluate(r, p):\n    return 1.0' });
     const cand = await client.uploadCandidate(MOCK_FMU_ID, MOCK_NEDC_PATH, new File(['k'], 'k.mat'));
+    await client.uploadCandidate(MOCK_FMU_ID, MOCK_NEDC_PATH, new File(['u'], 'unused.mat'));  // 탐색하지 않은 후보는 빠진다
     const orig = (await client.listResources(MOCK_FMU_ID)).find(r => r.path === MOCK_NEDC_PATH)!.candidates[0];
     const job = await client.createOptimization({
       ...optReq([{ objectiveId: obj.id, direction: 'minimize' }], 12),

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from ..config import Settings
 from ..models import Fmu, Run, Variant
+from ..paths import get_extract_dir
 from . import catalog, variants
 
 
@@ -13,8 +14,6 @@ def migrate(engine: Engine, session_factory: sessionmaker[Session], settings: Se
         with engine.begin() as c:
             c.execute(text("ALTER TABLE runs ADD COLUMN variant_id VARCHAR(16)"))
             c.execute(text("CREATE INDEX IF NOT EXISTS ix_runs_variant_id ON runs (variant_id)"))
-
-    from ..fmu.registry import get_extract_dir
 
     with session_factory() as s:
         for fmu in s.scalars(select(Fmu)).all():

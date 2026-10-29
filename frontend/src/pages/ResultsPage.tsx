@@ -8,6 +8,7 @@ import { useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
 import type { FmuSummary, Job, RunPage, RunRow } from '../api/types';
 import { ObjectivePicker } from '../components/ObjectivePicker';
+import { useVariants } from '../components/ResourceGroupSection';
 import { RunTable, type Sort } from '../components/RunTable';
 import { ScatterChart } from '../components/ScatterChart';
 import { TimeseriesChart } from '../components/TimeseriesChart';
@@ -43,11 +44,6 @@ function axisValue(r: RunRow, key: string): number | null {
     return typeof v === 'number' ? v : typeof v === 'boolean' ? Number(v) : null;
   }
   return r.objectives[key.slice(10)]?.value ?? null;
-}
-
-function useVariants(fmuId: string) {
-  const api = useApi();
-  return useQuery({ queryKey: ['variants', fmuId], queryFn: () => api.listVariants(fmuId) });
 }
 
 function FmuResults({ fmu }: { fmu: FmuSummary }) {
