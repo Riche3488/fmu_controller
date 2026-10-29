@@ -51,3 +51,8 @@ export function defaultBounds(start: unknown): { min: number; max: number } {
   const [a, b] = [s * 0.5, s * 1.5];
   return { min: Math.min(a, b), max: Math.max(a, b) };
 }
+
+/** resource 조합 수: 파일별 후보 수의 곱 (선택 없으면 1) */
+export function countResourceCombos(sel: Record<string, string[]>): number {
+  return Object.values(sel).reduce((n, ids) => n * ids.length, 1);
+}

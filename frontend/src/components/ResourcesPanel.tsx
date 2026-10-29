@@ -5,7 +5,7 @@ import { useApi } from '../api/client';
 import type { ResourceCandidate, ResourceFile } from '../api/types';
 import { CandidatePreview } from './CandidatePreview';
 
-export function formatSize(n: number): string {
+function formatSize(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / 1024 ** 2).toFixed(1)} MB`;

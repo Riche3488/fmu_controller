@@ -6,9 +6,10 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
 import type { Sampling, SweepParam, Variable } from '../api/types';
+import { ResourceGroupSection, batchResourcesForRequest, useResources } from '../components/ResourceGroupSection';
 import { RunSettingsSection, useRunSettings } from '../components/RunSettingsSection';
 import { VariablePicker } from '../components/VariablePicker';
-import { countCases, defaultBounds, previewCases } from '../lib/sweep';
+import { countCases, countResourceCombos, defaultBounds, previewCases } from '../lib/sweep';
 
 const CONFIRM_THRESHOLD = 1000;
 
@@ -44,6 +45,8 @@ export function BatchSetupPage() {
   const [sampling, setSampling] = useState<Sampling>('grid');
   const [nSamples, setNSamples] = useState(20);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [resourceSel, setResourceSel] = useState<Record<string, string[]>>({});
+  const resourceFiles = useResources(fmuId);
 
   const sweep = rows.map(toSweep);
   const invalidRow = rows.find((_, i) => !sweep[i]);
@@ -58,17 +61,20 @@ export function BatchSetupPage() {
     }
   }, [JSON.stringify(params), sampling, nSamples]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const combos = countResourceCombos(resourceSel);
+  const total = count * combos;
   const submit = useMutation({
     mutationFn: () => api.createBatch({
       name, fmuId, params, sampling,
       nSamples: sampling === 'lhs' || sampling === 'random' ? nSamples : null,
       ...settings!,
+      resources: batchResourcesForRequest(resourceFiles.data ?? [], resourceSel),
     }),
     onSuccess: job => navigate(`/jobs/${job.id}`),
   });
 
   const canSubmit = !!settings && rows.length > 0 && !invalidRow && !countError && !fixedError && count > 0 && !submit.isPending;
-  const onSubmit = () => (count > CONFIRM_THRESHOLD ? setConfirmOpen(true) : submit.mutate());
+  const onSubmit = () => (total > CONFIRM_THRESHOLD ? setConfirmOpen(true) : submit.mutate());
   const update = (i: number, patch: Partial<Row>) => setRows(rs => rs.map((r, k) => (k === i ? { ...r, ...patch } : r)));
 
   const addParam = async (names: string[]) => {
@@ -131,6 +137,11 @@ export function BatchSetupPage() {
       </Card>
 
       <Card withBorder>
+        <Title order={4} mb="sm">Resource 파일</Title>
+        <ResourceGroupSection fmuId={fmuId} value={resourceSel} onChange={setResourceSel} />
+      </Card>
+
+      <Card withBorder>
         <Title order={4} mb="sm">샘플링</Title>
         <Group align="end">
           <SegmentedControl value={sampling} onChange={v => setSampling(v as Sampling)}
@@ -140,6 +151,9 @@ export function BatchSetupPage() {
           )}
         </Group>
         {countError ? <Alert color="red" mt="sm">{countError}</Alert> : <Text fw={600} mt="sm">총 {count} 케이스</Text>}
+        {!countError && combos > 1 && (
+          <Text fw={600}>총 {total}개 run (파라미터 {count} × Resource 조합 {combos})</Text>
+        )}
         {preview.length > 0 && (
           <Table mt="xs" fz="xs">
             <Table.Thead>
@@ -167,7 +181,7 @@ export function BatchSetupPage() {
       </Group>
 
       <Modal opened={confirmOpen} onClose={() => setConfirmOpen(false)} title="확인" transitionProps={{ duration: 0 }}>
-        <Text>케이스가 많습니다 ({count}개). 계속하시겠습니까?</Text>
+        <Text>케이스가 많습니다 ({total}개). 계속하시겠습니까?</Text>
         <Group justify="end" mt="md">
           <Button variant="default" onClick={() => setConfirmOpen(false)}>취소</Button>
           <Button onClick={() => { setConfirmOpen(false); submit.mutate(); }}>계속</Button>

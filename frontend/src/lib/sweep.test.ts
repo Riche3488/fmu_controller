@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { countCases, defaultBounds, expandValues, previewCases } from './sweep';
+import { countCases, countResourceCombos, defaultBounds, expandValues, previewCases } from './sweep';
 import type { SweepParam } from '../api/types';
 
 const listA3: SweepParam = { name: 'a', mode: 'list', values: [1, 2, 3] };
@@ -57,5 +57,12 @@ describe('defaultBounds', () => {
     expect(defaultBounds(0)).toEqual({ min: -1, max: 1 });
     expect(defaultBounds(-2)).toEqual({ min: -3, max: -1 });
     expect(defaultBounds(true)).toEqual({ min: -1, max: 1 });
+  });
+});
+
+describe('countResourceCombos', () => {
+  test('multiplies candidate counts per resource file', () => {
+    expect(countResourceCombos({ a: ['1', '2'], b: ['x', 'y', 'z'] })).toBe(6);
+    expect(countResourceCombos({})).toBe(1);
   });
 });
