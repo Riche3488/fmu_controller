@@ -1,0 +1,8 @@
+import numpy as np
+import pandas as pd
+
+
+def evaluate(result: pd.DataFrame, params: dict) -> float:
+    """result: 'time' 컬럼 + 기록된 변수 컬럼. 반환: 이 목적함수의 스칼라 값 1개."""
+    t = result["time"].to_numpy()
+    return float(t[-1] - t[0])
