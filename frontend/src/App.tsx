@@ -9,11 +9,13 @@ import { JobListPage } from './pages/JobListPage';
 import { JobMonitorPage } from './pages/JobMonitorPage';
 import { ObjectiveEditorPage } from './pages/ObjectiveEditorPage';
 import { OptimizationSetupPage } from './pages/OptimizationSetupPage';
+import { PresetsPage } from './pages/PresetsPage';
 import { ResultsPage } from './pages/ResultsPage';
 
 const NAV = [
   { to: '/fmus', label: 'FMU' },
   { to: '/objectives', label: '목적함수' },
+  { to: '/presets', label: '프리셋' },
   { to: '/jobs', label: '잡' },
 ];
 
@@ -52,6 +54,7 @@ export function AppRoutes() {
         <Route path="/fmus/:fmuId/results" element={<ResultsPage />} />
         <Route path="/objectives" element={<ObjectiveEditorPage />} />
         <Route path="/objectives/:objectiveId" element={<ObjectiveEditorPage />} />
+        <Route path="/presets" element={<PresetsPage />} />
         <Route path="/jobs" element={<JobListPage />} />
         <Route path="/jobs/:jobId" element={<JobMonitorPage />} />
       </Route>

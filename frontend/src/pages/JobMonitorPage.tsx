@@ -1,20 +1,24 @@
 import { Alert, Button, Card, Group, MultiSelect, Progress, Select, Stack, Text, Title } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
-import type { Direction, Job, OptimizationRequest, RunRow } from '../api/types';
+import type { BatchRequest, Direction, Job, OptimizationRequest, PresetInput, RunRow } from '../api/types';
 import { BestTrialCard } from '../components/BestTrialCard';
 import { CandidateBarChart } from '../components/CandidateBarChart';
 import { JobStatusBadge } from '../components/JobStatusBadge';
 import { ObjectivePicker } from '../components/ObjectivePicker';
+import { PresetNameModal } from '../components/PresetMenuBar';
 import { useResources, useVariants } from '../components/ResourceGroupSection';
+import { useOutputNames } from '../components/RunSettingsSection';
 import { RunTable, type Sort } from '../components/RunTable';
 import { ScatterChart } from '../components/ScatterChart';
 import { StaleSnapshotAlert } from '../components/StaleSnapshotAlert';
 import { TimeseriesChart } from '../components/TimeseriesChart';
 import { paretoFront } from '../lib/pareto';
+import { batchRequestToPresetConfig, requestToPresetConfig } from '../lib/presets';
 
 const REFRESH_DEBOUNCE_MS = 500;
 const ACTIVE = ['queued', 'running'];
@@ -79,6 +83,7 @@ export function JobMonitorPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [tsVars, setTsVars] = useState<string[] | null>(null);
   const [barObjective, setBarObjective] = useState<string | null>(null);
+  const [savingPreset, setSavingPreset] = useState(false);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 실시간 이벤트: 잡 상태는 바로 반영, run 목록은 디바운스 후 재조회
@@ -115,6 +120,16 @@ export function JobMonitorPage() {
   const fmuId = j?.fmuId ?? '';
   const variants = useVariants(fmuId);
   const resourceFiles = useResources(fmuId);
+  const outputs = useOutputNames(fmuId || undefined);
+  const savePreset = async (name: string) => {
+    const files = resourceFiles.data ?? [], outs = outputs.data ?? [];
+    await api.createPreset((optConfig
+      ? { name, kind: 'optimization', sourceFmuId: fmuId, config: requestToPresetConfig(optConfig, files, outs) }
+      : { name, kind: 'batch', sourceFmuId: fmuId, config: batchRequestToPresetConfig(j!.config as BatchRequest, files, outs) }
+    ) as PresetInput);
+    qc.invalidateQueries({ queryKey: ['presets'] });
+    notifications.show({ message: `프리셋 '${name}'을(를) 저장했습니다. 설정 화면의 불러오기 메뉴에서 쓸 수 있습니다`, color: 'green' });
+  };
   const cancel = useMutation({ mutationFn: () => api.cancelJob(jobId), onSuccess: d => qc.setQueryData(['job', jobId], d) });
 
   const paramNames = useMemo(() => {
@@ -126,7 +141,8 @@ export function JobMonitorPage() {
   if (!j) return job.isError ? <Text c="red">{(job.error as Error).message}</Text> : null;
   const done = j.completed + j.failed;
   const rows = runs.data?.items ?? [];
-  const vars = tsVars ?? j.config.recordVariables.slice(0, 1);
+  const plotDefault = j.config.plotVariables?.length ? j.config.plotVariables : j.config.recordVariables.slice(0, 1);
+  const vars = tsVars ?? plotDefault;
   const toggle = (id: string) => setSelected(s => (s.includes(id) ? s.filter(x => x !== id) : s.length >= 10 ? s : [...s, id]));
   const runLabel = (id: string) => `#${rows.find(r => r.id === id)?.index ?? '?'}`;
   const variantList = variants.data ?? [];
@@ -150,10 +166,18 @@ export function JobMonitorPage() {
           <Title order={2}>잡 모니터 — {j.name}</Title>
           <JobStatusBadge status={j.status} />
         </Group>
-        {ACTIVE.includes(j.status) && (
-          <Button color="red" variant="light" onClick={() => cancel.mutate()} loading={cancel.isPending}>취소</Button>
-        )}
+        <Group>
+          <Button variant="default" component={Link} to={`/fmus/${fmuId}/${optConfig ? 'optimize' : 'batch'}?fromJob=${j.id}`}>
+            {optConfig ? '이 설정으로 새 최적화' : '이 설정으로 새 배치'}
+          </Button>
+          <Button variant="default" onClick={() => setSavingPreset(true)} disabled={!resourceFiles.isSuccess}>프리셋으로 저장</Button>
+          {ACTIVE.includes(j.status) && (
+            <Button color="red" variant="light" onClick={() => cancel.mutate()} loading={cancel.isPending}>취소</Button>
+          )}
+        </Group>
       </Group>
+      <PresetNameModal opened={savingPreset} title="이 잡의 설정을 프리셋으로 저장" confirmLabel="저장" initialName={j.name}
+        onClose={() => setSavingPreset(false)} onSubmit={savePreset} />
       <Card withBorder>
         <Progress value={j.total ? (100 * done) / j.total : 0} />
         <Group justify="space-between" mt={4}>

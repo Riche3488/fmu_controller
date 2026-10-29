@@ -1,5 +1,5 @@
 // 배치/최적화 공통 실행 설정: 시뮬레이션 설정, 기록 변수, 고정 파라미터, 병렬 수, 타임아웃
-import { Accordion, Group, NumberInput, Stack, Text, Textarea } from '@mantine/core';
+import { Accordion, Group, MultiSelect, NumberInput, Stack, Text, Textarea } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useApi } from '../api/client';
@@ -38,25 +38,37 @@ export function parseFixedParams(text: string): { params: Record<string, ParamVa
   return { params, error: null };
 }
 
+export function formatFixedParams(params: Record<string, ParamValue>): string {
+  return Object.entries(params).map(([k, v]) => `${k}=${v}`).join('\n');
+}
+
+export function defaultRunSettings(fmu: FmuSummary, outputNames: string[]): RunSettings {
+  return {
+    sim: defaultSimSettings(fmu.defaultExperiment),
+    recordVariables: outputNames,
+    fixedParams: {},
+    workers: defaultWorkers(),
+    runTimeoutSec: DEFAULT_RUN_TIMEOUT_SEC,
+  };
+}
+
+/** FMU의 출력 변수 이름 전체 */
+export function useOutputNames(fmuId: string | undefined) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['variables', fmuId, 'output', 'all-names'],
+    queryFn: () => api.listVariables(fmuId!, { causality: 'output', offset: 0, limit: 100000 }),
+    enabled: !!fmuId,
+    select: page => page.items.map(v => v.name),
+  });
+}
+
 /** FMU 기본값(DefaultExperiment, 출력 전체 기록)으로 초기화된 실행 설정 상태 */
 export function useRunSettings(fmu: FmuSummary | undefined) {
-  const api = useApi();
   const [settings, setSettings] = useState<RunSettings | null>(null);
-  const outputs = useQuery({
-    queryKey: ['variables', fmu?.id, 'output', 'all-names'],
-    queryFn: () => api.listVariables(fmu!.id, { causality: 'output', offset: 0, limit: 100000 }),
-    enabled: !!fmu,
-  });
+  const outputs = useOutputNames(fmu?.id);
   useEffect(() => {
-    if (fmu && outputs.data && !settings) {
-      setSettings({
-        sim: defaultSimSettings(fmu.defaultExperiment),
-        recordVariables: outputs.data.items.map(v => v.name),
-        fixedParams: {},
-        workers: defaultWorkers(),
-        runTimeoutSec: DEFAULT_RUN_TIMEOUT_SEC,
-      });
-    }
+    if (fmu && outputs.data && !settings) setSettings(defaultRunSettings(fmu, outputs.data));
   }, [fmu, outputs.data, settings]);
   return [settings, setSettings] as const;
 }
@@ -67,7 +79,8 @@ export function RunSettingsSection({ fmuId, value, onChange, onFixedError }: {
   onChange: (v: RunSettings) => void;
   onFixedError: (e: string | null) => void;
 }) {
-  const [fixedText, setFixedText] = useState('');
+  // 프리셋을 불러오면 부모가 key를 바꿔 다시 마운트하므로 처음 값만 글로 옮기면 된다
+  const [fixedText, setFixedText] = useState(() => formatFixedParams(value.fixedParams));
   const [fixedError, setFixedError] = useState<string | null>(null);
   const set = <K extends keyof RunSettings>(k: K, v: RunSettings[K]) => onChange({ ...value, [k]: v });
 
@@ -104,5 +117,20 @@ export function RunSettingsSection({ fmuId, value, onChange, onFixedError }: {
         </Accordion.Item>
       </Accordion>
     </Stack>
+  );
+}
+
+/** 잡 모니터 시계열에 처음 띄울 변수 (기록 변수 중에서만) */
+export function PlotVariablesSelect({ recordVariables, value, onChange }: {
+  recordVariables: string[];
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  return (
+    <MultiSelect mt="md" label="잡 모니터에 표시할 변수" searchable clearable limit={200}
+      description="잡 모니터의 시계열 차트에 처음 띄울 변수입니다 (기록 변수 중에서). 비우면 첫 번째 기록 변수를 띄웁니다."
+      placeholder="변수 선택" data={recordVariables}
+      value={value.filter(v => recordVariables.includes(v))} onChange={onChange}
+      comboboxProps={{ transitionProps: { duration: 0 } }} />
   );
 }

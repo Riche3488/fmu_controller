@@ -12,6 +12,8 @@ import type {
   ObjectiveValue,
   OptimizationRequest,
   ParamValue,
+  Preset,
+  PresetInput,
   ResourceCandidate,
   Run,
   RunRow,
@@ -137,6 +139,7 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
   const resources = new Map<string, MockResource[]>();
   const contents = new Map<string, string>(); // 후보 id -> 텍스트 내용 (미리보기용)
   const variants = new Map<string, MockVariant>();
+  const presets = new Map<string, Preset & { touched: number }>(); // touched: 같은 ms 안의 수정 순서
   let seq = 0;
   const nextId = (prefix: string) => `${prefix}${(++seq).toString().padStart(6, '0')}`;
 
@@ -251,6 +254,29 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
       completed: 0, failed: 0, createdAt: now(), finishedAt: null, error: null, config: req,
       objectiveSnapshot: null,
     };
+  }
+
+  function savePreset(id: string, input: PresetInput, createdAt: string): Preset {
+    const name = input.name.trim();
+    if (!name) throw new ApiError('name: 이름을 입력하세요', 422);
+    if ([...presets.values()].some(p => p.kind === input.kind && p.name === name && p.id !== id)) {
+      throw new ApiError('같은 이름의 프리셋이 이미 있습니다', 409);
+    }
+    const prev = presets.get(id);
+    if (prev && prev.kind !== input.kind) throw new ApiError('프리셋 종류는 바꿀 수 없습니다', 422);
+    const p = {
+      ...input, id, name, createdAt, updatedAt: now(), touched: ++seq,
+      sourceModelName: (input.sourceFmuId && fmus.get(input.sourceFmuId)?.modelName) || prev?.sourceModelName || '',
+      config: structuredClone(input.config),
+    } as Preset & { touched: number };
+    presets.set(id, p);
+    return publicPreset(p);
+  }
+
+  function publicPreset(p: Preset & { touched: number }): Preset {
+    const out: Partial<typeof p> = structuredClone(p);
+    delete out.touched;
+    return out as Preset;
   }
 
   function getObj(id: string): Objective {
@@ -388,6 +414,8 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
     },
 
     async createBatch(req) {
+      const notRecorded = (req.plotVariables ?? []).filter(v => !req.recordVariables.includes(v));
+      if (notRecorded.length) throw new ApiError(`표시 변수는 기록 변수 중에서 골라야 합니다: ${notRecorded.join(', ')}`, 422);
       const sel = req.resources ?? {};
       getResources(req.fmuId);
       if (Object.values(sel).some(ids => ids.length === 0)) throw new ApiError('resource 후보를 하나 이상 고르세요', 422);
@@ -408,6 +436,8 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
       if (req.algorithm === 'cmaes' && searchCounts.length) {
         throw new ApiError('CMA-ES는 파일 탐색(선택형 변수)을 지원하지 않습니다', 422);
       }
+      const notRecorded = (req.plotVariables ?? []).filter(v => !req.recordVariables.includes(v));
+      if (notRecorded.length) throw new ApiError(`표시 변수는 기록 변수 중에서 골라야 합니다: ${notRecorded.join(', ')}`, 422);
       getResources(req.fmuId);
       const job = newJob('optimization', req, req.nTrials);
       job.objectiveSnapshot = Object.fromEntries(req.objectives.map(o => {
@@ -451,6 +481,22 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
       onEvent({ type: 'progress', job: st.job });
       if (!['queued', 'running'].includes(st.job.status)) onEvent({ type: 'end', job: st.job });
       return () => st.listeners.delete(onEvent);
+    },
+
+    async listPresets(q = {}) {
+      return [...presets.values()].filter(p => !q.kind || p.kind === q.kind)
+        .sort((a, b) => b.touched - a.touched).map(publicPreset);
+    },
+    async createPreset(input) {
+      return savePreset(nextId('preset'), input, now());
+    },
+    async updatePreset(id, input) {
+      const cur = presets.get(id);
+      if (!cur) throw new ApiError('프리셋을 찾을 수 없습니다', 404);
+      return savePreset(id, input, cur.createdAt);
+    },
+    async deletePreset(id) {
+      if (!presets.delete(id)) throw new ApiError('프리셋을 찾을 수 없습니다', 404);
     },
 
     async listRuns(q) {

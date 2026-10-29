@@ -2,19 +2,24 @@ import {
   ActionIcon, Alert, Button, Card, Group, NumberInput, SegmentedControl, Stack, Table, Text, TextInput, Title,
 } from '@mantine/core';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
-import type { Algorithm, DesignVar, Direction, OptResource } from '../api/types';
+import type { Algorithm, DesignVar, Direction, OptimizationRequest, OptResource } from '../api/types';
 import { ObjectivePicker } from '../components/ObjectivePicker';
 import {
   OptResourceSection, hasSearch, optResourcesForRequest, searchInvalid, useResources,
 } from '../components/ResourceGroupSection';
-import { RunSettingsSection, useRunSettings } from '../components/RunSettingsSection';
+import {
+  PlotVariablesSelect, RunSettingsSection, defaultRunSettings, useOutputNames, useRunSettings,
+} from '../components/RunSettingsSection';
+import { nowStamp, usePresetEditor } from '../components/usePresetEditor';
 import { VariablePicker } from '../components/VariablePicker';
+import { applyPresetConfig, formToPresetConfig, requestToPresetConfig, type OptForm } from '../lib/presets';
 import { defaultBounds } from '../lib/sweep';
 
 const CMAES_SEARCH_NOTE = 'CMA-ES는 파일 탐색(선택형 변수)을 지원하지 않습니다';
+const DEFAULT_N_TRIALS = 50;
 
 function algorithms(multi: boolean, gpAvailable: boolean, search: boolean) {
   const gp = { value: 'gp', label: gpAvailable ? 'GP' : 'GP (torch 설치 필요)', disabled: !gpAvailable };
@@ -30,21 +35,33 @@ export function OptimizationSetupPage() {
   const fmu = useQuery({ queryKey: ['fmu', fmuId], queryFn: () => api.getFmu(fmuId) });
   const [settings, setSettings] = useRunSettings(fmu.data);
   const [fixedError, setFixedError] = useState<string | null>(null);
-  const [name, setName] = useState(() => `opt-${new Date().toISOString().slice(0, 16).replace('T', ' ')}`);
+  const [name, setName] = useState(() => `opt-${nowStamp()}`);
   const [vars, setVars] = useState<DesignVar[]>([]);
   const [objectiveIds, setObjectiveIds] = useState<string[]>([]);
   const [directions, setDirections] = useState<Record<string, Direction>>({});
   const [algorithm, setAlgorithm] = useState<Algorithm>('tpe');
   const [algoNote, setAlgoNote] = useState<string | null>(null);
-  const [nTrials, setNTrials] = useState(50);
+  const [nTrials, setNTrials] = useState(DEFAULT_N_TRIALS);
   const [resourceSel, setResourceSel] = useState<Record<string, OptResource>>({});
+  const [plotVars, setPlotVars] = useState<string[]>([]);
   const resourceFiles = useResources(fmuId);
+  const outputs = useOutputNames(fmuId);
+  const allVars = useQuery({
+    queryKey: ['variables', fmuId, 'all', 'all-names'],
+    queryFn: () => api.listVariables(fmuId, { offset: 0, limit: 100000 }),
+  });
+  const objectivesList = useQuery({ queryKey: ['objectives'], queryFn: () => api.listObjectives() });
   const health = useQuery({ queryKey: ['health'], queryFn: () => api.health() });
   const search = hasSearch(resourceSel);
+  // RunSettingsSection은 고정 파라미터 글을 자체 상태로 가지므로 불러올 때 다시 마운트한다
+  const [formKey, setFormKey] = useState(0);
 
   const multi = objectiveIds.length > 1;
+  const prevMulti = useRef(multi);
   useEffect(() => {
-    // 단일↔다목적 전환 시 기본 알고리즘으로 바꾼다 (다목적: NSGA-II, 단일: TPE)
+    // 사용자가 단일↔다목적을 바꾸면 기본 알고리즘으로 (다목적: NSGA-II, 단일: TPE). 불러온 설정은 건드리지 않는다.
+    if (prevMulti.current === multi) return;
+    prevMulti.current = multi;
     if (multi) {
       setAlgoNote(algorithm === 'cmaes' ? 'CMA-ES는 단일 목적만 지원합니다' : null);
       setAlgorithm('nsga2');
@@ -61,6 +78,42 @@ export function OptimizationSetupPage() {
     }
   }, [search, algorithm]);
 
+  const form: OptForm | null = settings
+    ? { vars, objectiveIds, directions, algorithm, nTrials, resourceSel, settings, plotVariables: plotVars }
+    : null;
+  const loadReady = !!form && resourceFiles.isSuccess && allVars.isSuccess && objectivesList.isSuccess
+    && outputs.isSuccess && health.isFetched;
+
+  const applyForm = (f: OptForm) => {
+    prevMulti.current = f.objectiveIds.length > 1;
+    setVars(f.vars);
+    setObjectiveIds(f.objectiveIds);
+    setDirections(f.directions);
+    setAlgorithm(f.algorithm);
+    setAlgoNote(null);
+    setNTrials(f.nTrials);
+    setResourceSel(f.resourceSel);
+    setSettings(f.settings);
+    setPlotVars(f.plotVariables);
+    setFixedError(null);
+    setFormKey(k => k + 1);
+  };
+
+  const presetUi = usePresetEditor({
+    kind: 'optimization', fmuId, modelName: fmu.data?.modelName ?? '', form, ready: loadReady, name, setName,
+    setForm: applyForm,
+    toConfig: f => formToPresetConfig(f, resourceFiles.data ?? [], outputs.data ?? []),
+    fromConfig: cfg => applyPresetConfig(cfg, {
+      files: resourceFiles.data ?? [], variables: allVars.data?.items ?? [],
+      objectiveIds: (objectivesList.data ?? []).map(o => o.id), gpAvailable: !!health.data?.gpAvailable,
+    }),
+    jobToConfig: j => requestToPresetConfig(j.config as OptimizationRequest, resourceFiles.data ?? [], outputs.data ?? []),
+    defaultForm: (): OptForm => ({
+      vars: [], objectiveIds: [], directions: {}, algorithm: 'tpe', nTrials: DEFAULT_N_TRIALS, resourceSel: {},
+      settings: defaultRunSettings(fmu.data!, outputs.data ?? []), plotVariables: [],
+    }),
+  });
+
   const badBounds = vars.some(v => !(v.min < v.max));
   const submit = useMutation({
     mutationFn: () => api.createOptimization({
@@ -68,6 +121,7 @@ export function OptimizationSetupPage() {
       objectives: objectiveIds.map(id => ({ objectiveId: id, direction: directions[id] ?? 'minimize' })),
       ...settings!,
       resources: optResourcesForRequest(resourceFiles.data ?? [], resourceSel),
+      plotVariables: plotVars.filter(v => settings!.recordVariables.includes(v)),
     }),
     onSuccess: job => navigate(`/jobs/${job.id}`),
   });
@@ -89,8 +143,12 @@ export function OptimizationSetupPage() {
 
   return (
     <Stack>
+      {presetUi.menuBar}
       <Title order={2}>최적화 설정</Title>
       <Text c="dimmed" size="sm">{fmu.data.modelName}</Text>
+
+      {presetUi.notice}
+
       <TextInput label="잡 이름" value={name} onChange={e => setName(e.currentTarget.value)} />
 
       <Card withBorder>
@@ -148,7 +206,8 @@ export function OptimizationSetupPage() {
       {settings && (
         <Card withBorder>
           <Title order={4} mb="sm">실행 설정</Title>
-          <RunSettingsSection fmuId={fmuId} value={settings} onChange={setSettings} onFixedError={setFixedError} />
+          <RunSettingsSection key={formKey} fmuId={fmuId} value={settings} onChange={setSettings} onFixedError={setFixedError} />
+          <PlotVariablesSelect recordVariables={settings.recordVariables} value={plotVars} onChange={setPlotVars} />
         </Card>
       )}
 
@@ -156,6 +215,8 @@ export function OptimizationSetupPage() {
       <Group justify="end">
         <Button onClick={() => submit.mutate()} disabled={!canSubmit} loading={submit.isPending}>최적화 실행</Button>
       </Group>
+
+      {presetUi.modals}
     </Stack>
   );
 }

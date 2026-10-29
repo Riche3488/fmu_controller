@@ -26,12 +26,13 @@ cd frontend; npm run lint      # 경고(react-refresh 등)는 기존부터 있�
   - `fmu/` 등록(`registry.py`, 내용 해시 id)·시뮬레이션(`simulate.py`, 워커에서 실행).
   - `resources/` 후보 파일(`catalog.py`), Resource 조합=variant(`variants.py`, 실행 폴더 생성), 미리보기(`preview.py`), 구 DB 보정(`migrate.py`).
   - `jobs/runner.py` `JobManager`: 잡마다 스레드 하나, 모든 잡이 시뮬레이션 슬롯(`_slots`)을 공유. `optimize.py`(Optuna), `sampling.py`(grid/zip/lhs/random).
+  - `routers/presets.py` 배치/최적화 설정 프리셋 CRUD (`kind`별 설정 스키마로 검사한 JSON만, resource는 후보 sha256으로 기록).
   - `objectives/` 목적함수 코드 저장·평가(별도 executor). `parallel/` Ray 또는 `multiprocessing.Pool`. `results/` Parquet 저장·조회.
   - `schemas.py` — API 스키마. **`frontend/src/api/types.ts`와 같은 형태(JSON camelCase)를 유지**한다.
 - `frontend/src/`
   - `api/client.ts` `ApiClient` 인터페이스 + `http/`(실서버)와 `mock/`(인메모리) 구현. 도메인별 `VITE_API_<DOMAIN>=mock`.
-  - `pages/`, `components/` (Mantine + ECharts + Monaco), `lib/` 순수 함수.
-  - React Query 키: `['resources', fmuId]`, `['variants', fmuId]`, `['runs', ...]`, `['job', id]` 등. 공용 훅은 `components/ResourceGroupSection.tsx`의 `useResources`/`useVariants`.
+  - `pages/`, `components/` (Mantine + ECharts + Monaco), `lib/` 순수 함수. 프리셋 ↔ 폼 변환은 `lib/presets.ts`, 메뉴 바와 공통 동작은 `components/PresetMenuBar.tsx`·`usePresetEditor.tsx`.
+  - React Query 키: `['resources', fmuId]`, `['variants', fmuId]`, `['runs', ...]`, `['job', id]`, `['presets', kind]` 등. 공용 훅은 `components/ResourceGroupSection.tsx`의 `useResources`/`useVariants`.
 
 ## 지켜야 할 규칙
 

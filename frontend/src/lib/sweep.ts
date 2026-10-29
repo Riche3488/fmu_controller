@@ -1,4 +1,4 @@
-import type { Sampling, SweepParam } from '../api/types';
+import type { Sampling, SweepParam, Variable } from '../api/types';
 
 export const ZIP_LENGTH_ERROR = 'zip 방식은 모든 파라미터의 값 개수가 같아야 합니다';
 export const SAMPLING_RANGE_ERROR = 'LHS/random 방식은 range 파라미터만 지원합니다';
@@ -55,4 +55,24 @@ export function defaultBounds(start: unknown): { min: number; max: number } {
 /** resource 조합 수: 파일별 후보 수의 곱 (선택 없으면 1) */
 export function countResourceCombos(sel: Record<string, string[]>): number {
   return Object.values(sel).reduce((n, ids) => n * ids.length, 1);
+}
+
+/** 배치 화면 편집용 행: list 모드 값은 입력 문자열 그대로 보관 */
+export type SweepRow = { name: string; mode: 'list' | 'range'; text: string; min: number; max: number; steps: number };
+
+export function parseList(text: string): number[] | null {
+  const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+  const nums = parts.map(Number);
+  return parts.length > 0 && nums.every(Number.isFinite) ? nums : null;
+}
+
+export function rowToSweep(r: SweepRow): SweepParam | null {
+  if (r.mode === 'range') return { name: r.name, mode: 'range', min: r.min, max: r.max, steps: r.steps };
+  const values = parseList(r.text);
+  return values && { name: r.name, mode: 'list', values };
+}
+
+export function newSweepRow(v: Pick<Variable, 'name' | 'start'>): SweepRow {
+  const start = typeof v.start === 'number' ? v.start : 0;
+  return { name: v.name, mode: 'list', text: String(start), ...defaultBounds(v.start), steps: 3 };
 }

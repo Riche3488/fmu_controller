@@ -5,33 +5,22 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
-import type { Sampling, SweepParam, Variable } from '../api/types';
+import type { BatchRequest, Sampling, SweepParam } from '../api/types';
 import { ResourceGroupSection, batchResourcesForRequest, useResources } from '../components/ResourceGroupSection';
-import { RunSettingsSection, useRunSettings } from '../components/RunSettingsSection';
+import {
+  PlotVariablesSelect, RunSettingsSection, defaultRunSettings, useOutputNames, useRunSettings,
+} from '../components/RunSettingsSection';
+import { nowStamp, usePresetEditor } from '../components/usePresetEditor';
 import { VariablePicker } from '../components/VariablePicker';
-import { countCases, countResourceCombos, defaultBounds, previewCases } from '../lib/sweep';
+import {
+  DEFAULT_N_SAMPLES, applyBatchPresetConfig, batchFormToPresetConfig, batchRequestToPresetConfig, type BatchForm,
+} from '../lib/presets';
+import {
+  countCases, countResourceCombos, newSweepRow, parseList, previewCases, rowToSweep, type SweepRow,
+} from '../lib/sweep';
 
 const CONFIRM_THRESHOLD = 1000;
-
-/** 화면 편집용 행: list 모드 값은 입력 문자열 그대로 보관 */
-type Row = { name: string; mode: 'list' | 'range'; text: string; min: number; max: number; steps: number };
-
-function parseList(text: string): number[] | null {
-  const parts = text.split(',').map(s => s.trim()).filter(Boolean);
-  const nums = parts.map(Number);
-  return parts.length > 0 && nums.every(Number.isFinite) ? nums : null;
-}
-
-function toSweep(r: Row): SweepParam | null {
-  if (r.mode === 'range') return { name: r.name, mode: 'range', min: r.min, max: r.max, steps: r.steps };
-  const values = parseList(r.text);
-  return values && { name: r.name, mode: 'list', values };
-}
-
-function newRow(v: Variable): Row {
-  const start = typeof v.start === 'number' ? v.start : 0;
-  return { name: v.name, mode: 'list', text: String(start), ...defaultBounds(v.start), steps: 3 };
-}
+type Row = SweepRow;
 
 export function BatchSetupPage() {
   const { fmuId = '' } = useParams();
@@ -40,15 +29,48 @@ export function BatchSetupPage() {
   const fmu = useQuery({ queryKey: ['fmu', fmuId], queryFn: () => api.getFmu(fmuId) });
   const [settings, setSettings] = useRunSettings(fmu.data);
   const [fixedError, setFixedError] = useState<string | null>(null);
-  const [name, setName] = useState(() => `batch-${new Date().toISOString().slice(0, 16).replace('T', ' ')}`);
+  const [name, setName] = useState(() => `batch-${nowStamp()}`);
   const [rows, setRows] = useState<Row[]>([]);
   const [sampling, setSampling] = useState<Sampling>('grid');
-  const [nSamples, setNSamples] = useState(20);
+  const [nSamples, setNSamples] = useState(DEFAULT_N_SAMPLES);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [resourceSel, setResourceSel] = useState<Record<string, string[]>>({});
+  const [plotVars, setPlotVars] = useState<string[]>([]);
+  // RunSettingsSection은 고정 파라미터 글을 자체 상태로 가지므로 불러올 때 다시 마운트한다
+  const [formKey, setFormKey] = useState(0);
   const resourceFiles = useResources(fmuId);
+  const outputs = useOutputNames(fmuId);
+  const allVars = useQuery({
+    queryKey: ['variables', fmuId, 'all', 'all-names'],
+    queryFn: () => api.listVariables(fmuId, { offset: 0, limit: 100000 }),
+  });
 
-  const sweep = rows.map(toSweep);
+  const form: BatchForm | null = settings
+    ? { rows, sampling, nSamples, resourceSel, settings, plotVariables: plotVars }
+    : null;
+  const applyForm = (f: BatchForm) => {
+    setRows(f.rows);
+    setSampling(f.sampling);
+    setNSamples(f.nSamples);
+    setResourceSel(f.resourceSel);
+    setSettings(f.settings);
+    setPlotVars(f.plotVariables);
+    setFixedError(null);
+    setFormKey(k => k + 1);
+  };
+  const presetUi = usePresetEditor({
+    kind: 'batch', fmuId, modelName: fmu.data?.modelName ?? '', form, name, setName, setForm: applyForm,
+    ready: !!form && resourceFiles.isSuccess && allVars.isSuccess && outputs.isSuccess,
+    toConfig: f => batchFormToPresetConfig(f, resourceFiles.data ?? [], outputs.data ?? []),
+    fromConfig: cfg => applyBatchPresetConfig(cfg, { files: resourceFiles.data ?? [], variables: allVars.data?.items ?? [] }),
+    jobToConfig: j => batchRequestToPresetConfig(j.config as BatchRequest, resourceFiles.data ?? [], outputs.data ?? []),
+    defaultForm: (): BatchForm => ({
+      rows: [], sampling: 'grid', nSamples: DEFAULT_N_SAMPLES, resourceSel: {},
+      settings: defaultRunSettings(fmu.data!, outputs.data ?? []), plotVariables: [],
+    }),
+  });
+
+  const sweep = rows.map(rowToSweep);
   const invalidRow = rows.find((_, i) => !sweep[i]);
   const params = sweep.filter((p): p is SweepParam => !!p);
 
@@ -69,6 +91,7 @@ export function BatchSetupPage() {
       nSamples: sampling === 'lhs' || sampling === 'random' ? nSamples : null,
       ...settings!,
       resources: batchResourcesForRequest(resourceFiles.data ?? [], resourceSel),
+      plotVariables: plotVars.filter(v => settings!.recordVariables.includes(v)),
     }),
     onSuccess: job => navigate(`/jobs/${job.id}`),
   });
@@ -82,15 +105,17 @@ export function BatchSetupPage() {
     if (!n || rows.some(r => r.name === n)) return;
     const page = await api.listVariables(fmuId, { q: n, causality: 'parameter', offset: 0, limit: 50 });
     const v = page.items.find(x => x.name === n);
-    if (v) setRows(rs => (rs.some(r => r.name === n) ? rs : [...rs, newRow(v)]));
+    if (v) setRows(rs => (rs.some(r => r.name === n) ? rs : [...rs, newSweepRow(v)]));
   };
 
   if (!fmu.data) return null;
 
   return (
     <Stack>
+      {presetUi.menuBar}
       <Title order={2}>배치 해석 설정</Title>
       <Text c="dimmed" size="sm">{fmu.data.modelName}</Text>
+      {presetUi.notice}
       <Alert color="blue" variant="light">목적함수 값은 결과 조회 시 최신 코드로 계산됩니다</Alert>
       <TextInput label="잡 이름" value={name} onChange={e => setName(e.currentTarget.value)} />
 
@@ -171,7 +196,8 @@ export function BatchSetupPage() {
       {settings && (
         <Card withBorder>
           <Title order={4} mb="sm">실행 설정</Title>
-          <RunSettingsSection fmuId={fmuId} value={settings} onChange={setSettings} onFixedError={setFixedError} />
+          <RunSettingsSection key={formKey} fmuId={fmuId} value={settings} onChange={setSettings} onFixedError={setFixedError} />
+          <PlotVariablesSelect recordVariables={settings.recordVariables} value={plotVars} onChange={setPlotVars} />
         </Card>
       )}
 
@@ -187,6 +213,7 @@ export function BatchSetupPage() {
           <Button onClick={() => { setConfirmOpen(false); submit.mutate(); }}>계속</Button>
         </Group>
       </Modal>
+      {presetUi.modals}
     </Stack>
   );
 }

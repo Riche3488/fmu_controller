@@ -94,6 +94,11 @@ export function createHttpClient(baseUrl = '/api'): ApiClient {
       return () => es.close();
     },
 
+    listPresets: (q = {}) => get(`/presets${qs(q)}`),
+    createPreset: input => request('POST', '/presets', input),
+    updatePreset: (id, input) => request('PUT', `/presets/${id}`, input),
+    deletePreset: id => request('DELETE', `/presets/${id}`),
+
     listRuns: q => get(`/runs${qs(q)}`),
     getTimeseries: (runId, vars, maxPoints = 2000) => get(`/runs/${runId}/timeseries${qs({ vars, maxPoints })}`),
   };

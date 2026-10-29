@@ -12,6 +12,9 @@ import type {
   ObjectiveTestResult,
   OptimizationRequest,
   Page,
+  Preset,
+  PresetInput,
+  PresetKind,
   RunPage,
   ResourceFile,
   RunQuery,
@@ -50,6 +53,11 @@ export interface ApiClient {
   cancelJob(id: string): Promise<Job>;
   /** 이벤트 구독. 반환 함수를 호출하면 구독 해제. */
   subscribeJob(id: string, onEvent: (e: JobEvent) => void): () => void;
+
+  listPresets(q?: { kind?: PresetKind }): Promise<Preset[]>;
+  createPreset(input: PresetInput): Promise<Preset>;
+  updatePreset(id: string, input: PresetInput): Promise<Preset>;
+  deletePreset(id: string): Promise<void>;
 
   listRuns(q: RunQuery): Promise<RunPage>;
   getTimeseries(runId: string, vars: string[], maxPoints?: number): Promise<Timeseries>;

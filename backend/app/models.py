@@ -116,3 +116,18 @@ class Variant(Base):
     fmu_id: Mapped[str] = mapped_column(ForeignKey("fmus.id", ondelete="CASCADE"), index=True)
     assignment: Mapped[dict[str, Any]]
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class Preset(Base):
+    """저장해 둔 잡 설정. FMU가 지워져도 남도록 FK를 두지 않고, resource는 후보 내용 sha256으로 기록한다."""
+    __tablename__ = "presets"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    kind: Mapped[str]
+    name: Mapped[str]
+    source_fmu_id: Mapped[str | None] = mapped_column(String(16))
+    source_model_name: Mapped[str] = mapped_column(default="")
+    config: Mapped[dict[str, Any]]
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    __table_args__ = (UniqueConstraint("kind", "name"),)

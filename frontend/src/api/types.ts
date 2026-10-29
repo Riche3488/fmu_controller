@@ -58,6 +58,8 @@ export type BatchRequest = {
   runTimeoutSec: number;
   /** resource path -> 후보 id 목록 (생략 = 원본) */
   resources?: Record<string, string[]>;
+  /** 잡 모니터 시계열에 처음 띄울 변수 (recordVariables 중에서) */
+  plotVariables?: string[];
 };
 
 export type DesignVar = { name: string; min: number; max: number; kind: 'float' | 'int' };
@@ -79,6 +81,8 @@ export type OptimizationRequest = {
   workers: number;
   runTimeoutSec: number;
   resources?: Record<string, OptResource>;
+  /** 잡 모니터 시계열에 처음 띄울 변수 (recordVariables 중에서) */
+  plotVariables?: string[];
 };
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'failed' | 'cancelled';
@@ -160,3 +164,37 @@ export type CandidatePreview =
 export type Variant = {
   id: string; fmuId: string; label: string; assignment: Record<string, string>; isOriginal: boolean; nRuns: number;
 };
+
+/** 프리셋 안의 resource 선택. 후보 id는 FMU마다 달라서 내용 sha256으로 기록한다. */
+export type PresetResource = { mode: 'fixed'; sha256: string } | { mode: 'search'; sha256s: string[] };
+/** 배치/최적화 공통 실행 설정 (잡 이름·FMU 제외). recordVariables null = 출력 변수 전체 */
+export type PresetRunConfig = {
+  fixedParams: Record<string, ParamValue>;
+  sim: SimSettings;
+  recordVariables: string[] | null;
+  plotVariables: string[];
+  workers: number;
+  runTimeoutSec: number;
+};
+export type OptPresetConfig = PresetRunConfig & {
+  designVars: DesignVar[];
+  objectives: OptObjective[];
+  algorithm: Algorithm;
+  nTrials: number;
+  resources: Record<string, PresetResource>;
+};
+/** 입력 중인 목록도 저장할 수 있게 list 값은 비어 있어도 된다 */
+export type BatchPresetConfig = PresetRunConfig & {
+  params: SweepParam[];
+  sampling: Sampling;
+  nSamples: number;
+  /** resource path -> 후보 내용 sha256 목록 */
+  resources: Record<string, string[]>;
+};
+export type PresetConfigs = { optimization: OptPresetConfig; batch: BatchPresetConfig };
+export type PresetKind = keyof PresetConfigs;
+type PresetMeta = { id: string; name: string; sourceFmuId: string | null; sourceModelName: string; createdAt: string; updatedAt: string };
+export type PresetOf<K extends PresetKind> = PresetMeta & { kind: K; config: PresetConfigs[K] };
+export type Preset = PresetOf<'optimization'> | PresetOf<'batch'>;
+export type PresetInputOf<K extends PresetKind> = { name: string; kind: K; sourceFmuId: string | null; config: PresetConfigs[K] };
+export type PresetInput = PresetInputOf<'optimization'> | PresetInputOf<'batch'>;
