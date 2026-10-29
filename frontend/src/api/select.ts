@@ -1,5 +1,6 @@
 // 도메인별 mock/http 선택. VITE_API_<DOMAIN>=mock|http (기본 mock)
 import type { ApiClient } from './client';
+import { createHttpClient } from './http/httpClient';
 import { createMockClient } from './mock/mockClient';
 
 export type Domain = 'FMUS' | 'OBJECTIVES' | 'JOBS' | 'RUNS';
@@ -32,5 +33,5 @@ export function createClient(): ApiClient {
   const modes = Object.fromEntries(
     (Object.keys(DOMAIN_METHODS) as Domain[]).map(d => [d, env[`VITE_API_${d}`] === 'http' ? 'http' : 'mock']),
   ) as Record<Domain, 'mock' | 'http'>;
-  return composeClient(modes, { mock: createMockClient() });
+  return composeClient(modes, { mock: createMockClient(), http: createHttpClient() });
 }
