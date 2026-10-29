@@ -1,4 +1,4 @@
-import { Anchor, Badge, Card, Checkbox, Grid, Group, Progress, Stack, Text, Title } from '@mantine/core';
+import { Alert, Anchor, Badge, Card, Checkbox, Grid, Group, Loader, Progress, Stack, Text, Title } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useApi } from '../api/client';
@@ -14,7 +14,7 @@ function FmuCard({ fmu }: { fmu: FmuSummary }) {
   return (
     <Card withBorder data-testid={`fmu-card-${fmu.id}`}>
       <Stack gap="xs">
-        <Text fw={600}>{fmu.modelName}</Text>
+        <Anchor component={Link} to={`/fmus/${fmu.id}`} fw={600}>{fmu.modelName}</Anchor>
         <Group gap={4} aria-label="단계 진행">
           {STEPS.map(s => (
             <Badge
@@ -69,7 +69,8 @@ export function HomePage() {
   const api = useApi();
   const fmus = useQuery({ queryKey: ['fmus'], queryFn: () => api.listFmus() });
   const jobs = useQuery({ queryKey: ['jobs'], queryFn: () => api.listJobs(), refetchInterval: 3000 });
-  if (!fmus.data) return null;
+  if (fmus.isError) return <Alert color="red">{fmus.error.message}</Alert>;
+  if (!fmus.data) return <Loader size="sm" />;
   const recent = (jobs.data ?? []).slice(0, 5);
   return (
     <Stack>

@@ -52,4 +52,19 @@ describe('HomePage', () => {
     renderApp({ route: '/fmus' });
     expect(await screen.findByText('WORKSPACE')).toBeInTheDocument();
   });
+
+  test('모델명 링크로 작업 공간 열기', async () => {
+    renderApp({ route: '/' });
+    const card = await screen.findByTestId(`fmu-card-${FMU_ID}`);
+    await userEvent.click(within(card).getByRole('link', { name: 'my_test.DriveCycleAT' }));
+    const nav = await screen.findByRole('navigation', { name: '진행 단계' });
+    expect(within(nav).getByText('① 모델').closest('[aria-current="step"]')).not.toBeNull();
+  });
+
+  test('FMU 목록 조회 실패 시 오류 표시', async () => {
+    const client = createMockClient({ tickMs: 10 });
+    client.listFmus = () => Promise.reject(new Error('목록 실패'));
+    renderApp({ route: '/', client });
+    expect(await screen.findByText('목록 실패')).toBeInTheDocument();
+  });
 });
