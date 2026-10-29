@@ -7,13 +7,6 @@ import pytest
 from app.models import Fmu
 
 
-@pytest.fixture
-def uploaded_fmu(client, fmu_path) -> str:
-    r = client.post("/api/fmus", files={"file": ("my 복사본.fmu", fmu_path.read_bytes())})
-    assert r.status_code == 201, r.text
-    return r.json()["id"]
-
-
 def test_upload_parses_real_fmu(client, fmu_path):
     t = time.time()
     r = client.post("/api/fmus", files={"file": ("my 복사본.fmu", fmu_path.read_bytes())})

@@ -50,3 +50,15 @@ class VariableOut(CamelModel):
     start: float | int | bool | str | None
     unit: str | None
     description: str | None
+
+
+class SimSettings(CamelModel):
+    start_time: float
+    stop_time: float
+    tolerance: float
+    output_interval: float
+
+
+class Timeseries(CamelModel):
+    time: list[float]
+    series: dict[str, list[float | None]]

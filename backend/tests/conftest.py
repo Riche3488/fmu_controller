@@ -33,3 +33,29 @@ def fmu_path() -> Path:
     if not p.exists():
         pytest.skip(f"test FMU not found: {p}")
     return p
+
+
+@pytest.fixture
+def uploaded_fmu(client, fmu_path) -> str:
+    r = client.post("/api/fmus", files={"file": ("my 복사본.fmu", fmu_path.read_bytes())})
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+@pytest.fixture(scope="session")
+def extract_dir(tmp_path_factory, fmu_path) -> Path:
+    """세션당 한 번 압축 해제한 FMU (시뮬레이션 테스트용, ASCII 경로)."""
+    from fmpy import extract
+
+    d = tmp_path_factory.mktemp("fmu_extract")
+    assert str(d).isascii()
+    extract(str(fmu_path), unzipdir=str(d))
+    return d
+
+
+@pytest.fixture(scope="session")
+def output_names(extract_dir) -> list[str]:
+    from fmpy import read_model_description
+
+    md = read_model_description(str(extract_dir), validate=False)
+    return [v.name for v in md.modelVariables if v.causality == "output"]

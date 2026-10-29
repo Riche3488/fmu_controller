@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from .config import Settings
 from .db import init_db, make_engine, make_session_factory
-from .routers import fmus
+from .routers import fmus, runs
 from .schemas import Health
 
 
@@ -28,6 +28,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="FMU Controller", lifespan=lifespan)
     app.include_router(fmus.router)
+    app.include_router(runs.router)
 
     @app.get("/api/health", response_model=Health)
     def health():
