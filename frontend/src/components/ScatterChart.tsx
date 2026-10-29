@@ -1,4 +1,5 @@
 import ReactECharts from 'echarts-for-react';
+import { useEchartsTheme } from '../theme';
 
 export type ScatterPoint = { x: number; y: number; id: string; highlight?: boolean };
 
@@ -28,8 +29,9 @@ export function ScatterChart({ points, xLabel, yLabel, onPointClick, highlightNa
         itemStyle: { color: 'transparent', borderColor: '#e8590c', borderWidth: 2 } },
     ],
   };
+  const echartsTheme = useEchartsTheme();
   return (
-    <ReactECharts data-testid={testId} option={option} notMerge style={{ height: 360 }}
+    <ReactECharts theme={echartsTheme} data-testid={testId} option={option} notMerge style={{ height: 360 }}
       onEvents={{ click: (e: { data?: { id?: string } }) => e.data?.id && onPointClick?.(e.data.id) }} />
   );
 }

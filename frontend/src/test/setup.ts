@@ -1,5 +1,8 @@
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
+
+// Mantine 색 스킴이 localStorage에 남아 다음 테스트에 새지 않게
+afterEach(() => localStorage.clear());
 
 // Mantine이 요구하는 브라우저 API (jsdom 미구현)
 // 일반 함수로 정의: vi.restoreAllMocks()가 구현을 지우지 않도록

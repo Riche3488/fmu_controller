@@ -1,6 +1,7 @@
 import { Alert, Code, Group, Loader, Table, Text, UnstyledButton } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
+import { useEchartsTheme } from '../theme';
 import { useState } from 'react';
 import { useApi } from '../api/client';
 import type { MatVariable } from '../api/types';
@@ -26,7 +27,8 @@ function MatPlot({ name, rows }: { name: string; rows: number[][] }) {
     yAxis: { type: 'value', scale: true },
     series,
   };
-  return <ReactECharts data-testid="mat-plot" option={option} notMerge style={{ height: 300 }} />;
+  const echartsTheme = useEchartsTheme();
+  return <ReactECharts theme={echartsTheme} data-testid="mat-plot" option={option} notMerge style={{ height: 300 }} />;
 }
 
 /** 후보 파일 미리보기: 텍스트는 그대로, .mat은 변수 표 + 선택 변수 그래프, 그 외는 안내 */

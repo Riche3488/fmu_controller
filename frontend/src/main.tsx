@@ -10,13 +10,15 @@ import '@mantine/notifications/styles.css';
 import { ApiProvider } from './api/client';
 import { createClient } from './api/select';
 import { AppRoutes } from './App';
+import { cssVariablesResolver, registerEchartsThemes, theme } from './theme';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 const api = createClient();
+registerEchartsThemes();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <MantineProvider defaultColorScheme="auto">
+    <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} defaultColorScheme="dark">
       <Notifications />
       <QueryClientProvider client={queryClient}>
         <ApiProvider client={api}>

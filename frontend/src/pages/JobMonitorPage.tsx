@@ -2,6 +2,7 @@ import { Alert, Button, Card, Group, MultiSelect, Progress, Select, Stack, Text,
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
+import { useEchartsTheme } from '../theme';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
@@ -45,7 +46,8 @@ function ConvergenceChart({ rows, objectiveId, direction }: { rows: RunRow[]; ob
       { name: '현재까지 최적', type: 'line', step: 'end', showSymbol: false, data: bestLine },
     ],
   };
-  return <ReactECharts data-testid="convergence-chart" option={option} notMerge style={{ height: 320 }} />;
+  const echartsTheme = useEchartsTheme();
+  return <ReactECharts theme={echartsTheme} data-testid="convergence-chart" option={option} notMerge style={{ height: 320 }} />;
 }
 
 function ParetoView({ rows, objectives, directions, selected, onPick }: {

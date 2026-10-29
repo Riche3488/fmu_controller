@@ -3,6 +3,7 @@ import {
 } from '@mantine/core';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
+import { useEchartsTheme } from '../theme';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
@@ -206,6 +207,7 @@ function FmuCompare({ fmu }: { fmu: FmuSummary }) {
     })),
   };
 
+  const echartsTheme = useEchartsTheme();
   return (
     <Stack>
       <MultiSelect label="비교할 FMU" placeholder="FMU 선택" value={others} onChange={setOthers} w={480}
@@ -218,7 +220,7 @@ function FmuCompare({ fmu }: { fmu: FmuSummary }) {
       {objectives.length > 0 && (
         <Card withBorder>
           {!ready && <Loader size="sm" />}
-          <ReactECharts data-testid="compare-boxplot" option={option} notMerge style={{ height: 360 }} />
+          <ReactECharts theme={echartsTheme} data-testid="compare-boxplot" option={option} notMerge style={{ height: 360 }} />
           <Table fz="xs" mt="sm">
             <Table.Thead>
               <Table.Tr><Table.Th>FMU</Table.Th><Table.Th>ok run</Table.Th>
@@ -281,6 +283,7 @@ function VariantCompare({ fmu }: { fmu: FmuSummary }) {
     yAxis: { type: 'value', scale: true },
     series: objectives.map(o => ({ name: o.name, type: 'boxplot', data: shown.map(v => boxStats(valuesOf(v.id, o.id)) ?? []) })),
   };
+  const echartsTheme = useEchartsTheme();
   return (
     <Stack>
       <Card withBorder>
@@ -292,7 +295,7 @@ function VariantCompare({ fmu }: { fmu: FmuSummary }) {
         <Card withBorder>
           {runs.isFetching && <Loader size="sm" />}
           {runs.isError && <Alert color="red">{(runs.error as Error).message}</Alert>}
-          <ReactECharts data-testid="variant-boxplot" option={option} notMerge style={{ height: 360 }} />
+          <ReactECharts theme={echartsTheme} data-testid="variant-boxplot" option={option} notMerge style={{ height: 360 }} />
           <Table fz="xs" mt="sm">
             <Table.Thead>
               <Table.Tr><Table.Th>Resource 조합</Table.Th><Table.Th>ok run</Table.Th>

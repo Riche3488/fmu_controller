@@ -1,6 +1,7 @@
 import { Text } from '@mantine/core';
 import { useQueries } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
+import { useEchartsTheme } from '../theme';
 import { useApi } from '../api/client';
 
 const MAX_POINTS = 2000;
@@ -15,6 +16,7 @@ export function TimeseriesChart({ runs, vars }: { runs: { runId: string; label: 
       enabled: vars.length > 0,
     })),
   });
+  const echartsTheme = useEchartsTheme();
   if (runs.length === 0 || vars.length === 0) return <Text size="sm" c="dimmed">run과 변수를 선택하세요</Text>;
   const error = results.find(r => r.isError)?.error as Error | undefined;
   if (error) return <Text size="sm" c="red">{error.message}</Text>;
@@ -38,5 +40,5 @@ export function TimeseriesChart({ runs, vars }: { runs: { runId: string; label: 
     yAxis: { type: 'value', scale: true },
     series,
   };
-  return <ReactECharts data-testid="timeseries-chart" option={option} notMerge style={{ height: 380 }} />;
+  return <ReactECharts theme={echartsTheme} data-testid="timeseries-chart" option={option} notMerge style={{ height: 380 }} />;
 }

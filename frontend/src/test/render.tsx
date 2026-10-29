@@ -6,11 +6,12 @@ import type { ReactNode } from 'react';
 import { ApiProvider, type ApiClient } from '../api/client';
 import { createMockClient } from '../api/mock/mockClient';
 import { AppRoutes } from '../App';
+import { theme } from '../theme';
 
 export function Providers({ client, route, children }: { client: ApiClient; route: string; children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return (
-    <MantineProvider>
+    <MantineProvider theme={theme} defaultColorScheme="dark">
       <QueryClientProvider client={qc}>
         <ApiProvider client={client}>
           <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>

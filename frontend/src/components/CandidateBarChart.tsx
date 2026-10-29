@@ -1,4 +1,5 @@
 import ReactECharts from 'echarts-for-react';
+import { useEchartsTheme } from '../theme';
 import type { Direction, ResourceFile, RunRow, Variant } from '../api/types';
 import { candidateLabel } from './ResourceGroupSection';
 
@@ -34,5 +35,6 @@ export function CandidateBarChart({ rows, variants, file, candidateIds, objectiv
       { name: '최적', type: 'bar', data: stat(xs => (direction === 'minimize' ? Math.min(...xs) : Math.max(...xs))) },
     ],
   };
-  return <ReactECharts data-testid={`candidate-bar-${file.path}`} option={option} notMerge style={{ height: 260 }} />;
+  const echartsTheme = useEchartsTheme();
+  return <ReactECharts theme={echartsTheme} data-testid={`candidate-bar-${file.path}`} option={option} notMerge style={{ height: 260 }} />;
 }
