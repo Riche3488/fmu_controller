@@ -2,6 +2,7 @@ import { Button, Card, Group, SimpleGrid, Stack, Tabs, Text, Title } from '@mant
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { useApi } from '../api/client';
+import { ResourcesPanel } from '../components/ResourcesPanel';
 import { VariablePicker } from '../components/VariablePicker';
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -48,12 +49,14 @@ export function FmuDetailPage() {
           <Tabs.Tab value="parameter">파라미터</Tabs.Tab>
           <Tabs.Tab value="output">출력</Tabs.Tab>
           <Tabs.Tab value="all">전체</Tabs.Tab>
+          <Tabs.Tab value="resources">Resources</Tabs.Tab>
         </Tabs.List>
         {(['parameter', 'output', 'all'] as const).map(c => (
           <Tabs.Panel key={c} value={c} pt="sm">
             <VariablePicker fmuId={f.id} causality={c} mode="view" />
           </Tabs.Panel>
         ))}
+        <Tabs.Panel value="resources" pt="sm"><ResourcesPanel fmuId={f.id} /></Tabs.Panel>
       </Tabs>
     </Stack>
   );
