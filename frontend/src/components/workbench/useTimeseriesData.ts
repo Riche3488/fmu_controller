@@ -7,6 +7,8 @@ const MAX_POINTS = 2000;
 
 export function useTimeseriesData(runIds: string[], vars: string[]): {
   byRun: Record<string, Timeseries>; isLoading: boolean; error: Error | null;
+  /** 실패한 run별 오류 (다른 run은 그대로 그린다) */
+  errors: { runId: string; message: string }[];
 } {
   const api = useApi();
   const results = useQueries({
@@ -18,9 +20,11 @@ export function useTimeseriesData(runIds: string[], vars: string[]): {
     })),
   });
   const byRun: Record<string, Timeseries> = {};
+  const errors: { runId: string; message: string }[] = [];
   runIds.forEach((id, i) => {
     const d = results[i]?.data;
     if (d) byRun[id] = d;
+    else if (results[i]?.isError) errors.push({ runId: id, message: (results[i].error as Error).message });
   });
   return {
     byRun,
@@ -28,5 +32,6 @@ export function useTimeseriesData(runIds: string[], vars: string[]): {
     // placeholderData(keepPreviousData)는 쓰지 않는다: 슬롯 단위라 run이 바뀌면 다른 run의 데이터가 섞여 들어온다.
     isLoading: vars.length > 0 && results.some(r => r.isLoading) && Object.keys(byRun).length === 0,
     error: (results.find(r => r.isError)?.error as Error | undefined) ?? null,
+    errors,
   };
 }

@@ -22,7 +22,7 @@ describe('useTimeseriesData', () => {
   it('변수가 없으면 요청하지 않고 로딩도 아니다', () => {
     let calls = 0;
     const { result } = setup(() => { calls++; return Promise.resolve(TS); })(['a'], []);
-    expect(result.current).toEqual({ byRun: {}, isLoading: false, error: null });
+    expect(result.current).toEqual({ byRun: {}, isLoading: false, error: null, errors: [] });
     expect(calls).toBe(0);
   });
 
@@ -38,6 +38,7 @@ describe('useTimeseriesData', () => {
     const { result } = setup(id => (id === 'a' ? Promise.resolve(TS) : Promise.reject(new Error('run b 실패'))))(['a', 'b'], ['v']);
     await waitFor(() => expect(result.current.error?.message).toBe('run b 실패'));
     expect(result.current.byRun).toEqual({ a: TS });
+    expect(result.current.errors).toEqual([{ runId: 'b', message: 'run b 실패' }]);
     expect(result.current.isLoading).toBe(false);
   });
 });

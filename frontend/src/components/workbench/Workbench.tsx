@@ -6,7 +6,7 @@ import { useContext, useEffect, useId, useMemo, useState } from 'react';
 import { useApi } from '../../api/client';
 import type { DashboardLayout } from '../../api/types';
 import {
-  CHART_GROUPS, CHART_LABELS, dashboardFromConfig, defaultDashboard, LAYOUTS, layoutDims, newPanel, parsePanels,
+  CHART_GROUPS, CHART_LABELS, dashboardFromConfig, defaultDashboard, LAYOUTS, layoutDims, newPanel, panelFieldRefs, parsePanels,
   type DashboardState, type PanelSpec,
 } from '../../lib/workbench';
 import { usePresetEditor } from '../usePresetEditor';
@@ -36,13 +36,18 @@ export function Workbench(props: { fmuId: string; filter: WorkbenchFilter }) {
 function WorkbenchInner({ fmuId, filter }: { fmuId: string; filter: WorkbenchFilter }) {
   const api = useApi();
   const fmu = useQuery({ queryKey: ['fmu', fmuId], queryFn: () => api.getFmu(fmuId) });
-  const { isLoading: dataLoading, error, ...data } = useWorkbenchData(fmuId, filter);
+  const [dash, setDash] = useState<DashboardState>(initialState);
+  // 패널이 쓰는 목적함수만 계산해 받는다 (전부 받으면 run마다 모든 목적함수를 다시 계산한다)
+  const objectiveList = [...new Set(dash.panels.flatMap(panelFieldRefs).filter(r => r.kind === 'objective').map(r => r.name))]
+    .sort();
+  const objectiveKey = JSON.stringify(objectiveList);
+  const objectiveNames = useMemo(() => JSON.parse(objectiveKey) as string[], [objectiveKey]);
+  const { isLoading: dataLoading, error, ...data } = useWorkbenchData(fmuId, filter, objectiveNames);
   // 조회가 실패하면 패널이 끝없이 돌지 않게 로딩을 끝낸다 (오류는 위에 따로 보여 준다)
   const isLoading = dataLoading && !error;
   // 패널 useMemo가 매 렌더 다시 계산하지 않게 데이터 객체를 고정한다
   const stableData = useMemo(() => data, [data.rows, data.objectives, data.params, data.vars, data.jobs, data.variants]); // eslint-disable-line react-hooks/exhaustive-deps
   const { selected, set } = useSelection();
-  const [dash, setDash] = useState<DashboardState>(initialState);
   const [editing, setEditing] = useState<string | null>(null);
   const [maximized, setMaximized] = useState<string | null>(null);
 

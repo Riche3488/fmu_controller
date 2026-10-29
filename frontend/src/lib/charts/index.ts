@@ -29,7 +29,13 @@ export const CHART_BUILDERS: Partial<Record<ChartKind, ChartBuilder>> = {
 
 export function buildChart(spec: PanelSpec, data: WorkbenchData, selected: string[], ts?: Record<string, Timeseries>): ChartResult {
   const builder = Object.hasOwn(CHART_BUILDERS, spec.chart) ? CHART_BUILDERS[spec.chart] : undefined;
-  return builder ? builder(spec, data, selected, ts) : { empty: '준비 중' };
+  if (!builder) return { empty: '준비 중' };
+  // 빌더 하나의 예외(이상한 데이터 등)가 패널 밖으로 번지지 않게 패널 안 문구로 바꾼다
+  try {
+    return builder(spec, data, selected, ts);
+  } catch (e) {
+    return { empty: `차트 오류: ${e instanceof Error ? e.message : String(e)}` };
+  }
 }
 
 export function isEmptyChart(r: ChartResult): r is { empty: string } {

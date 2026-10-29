@@ -9,11 +9,14 @@ import {
 } from '../../lib/workbench';
 import { panelCsv } from '../../lib/workbenchCsv';
 import { useEchartsTheme } from '../../theme';
+import { ChartErrorBoundary } from './ChartErrorBoundary';
 import { useSelection } from './SelectionContext';
 import { useTimeseriesData } from './useTimeseriesData';
 
 const PNG_BG = { 'fmuc-dark': '#161b22', 'fmuc-light': '#ffffff' } as const;
 const NO_TRANSITION = { transitionProps: { duration: 0 } };
+// 시간축 줌 동기화는 x축이 시간인 차트만 (위상도·FFT는 x축이 시간이 아님)
+const TIME_AXIS_CHARTS = new Set<PanelSpec['chart']>(['tsSubplots', 'tsOverlay', 'tsBand', 'tsDiff']);
 
 function download(name: string, url: string) {
   const a = document.createElement('a');
@@ -73,7 +76,7 @@ export function Panel({ spec, data, loading = false, onEdit, onRemove, onMaximiz
     },
   }), []);
 
-  const group = isTs ? syncGroup ?? '' : '';
+  const group = TIME_AXIS_CHARTS.has(spec.chart) ? syncGroup ?? '' : '';
   const applyGroup = (inst: EChartsType) => {
     // echarts.connect(group)는 Workbench가 한 번 부른다. 그룹을 비우면 연결에서 빠진다.
     inst.group = group;
@@ -90,18 +93,31 @@ export function Panel({ spec, data, loading = false, onEdit, onRemove, onMaximiz
   const exportCsv = () => {
     const url = URL.createObjectURL(new Blob([panelCsv(spec, data, isTs ? tsRunIds : undefined)], { type: 'text/csv;charset=utf-8' }));
     download(`${safeName(spec.title)}.csv`, url);
-    URL.revokeObjectURL(url);
+    // 클릭 직후 바로 해제하면 브라우저가 내려받기를 시작하기 전에 URL이 사라질 수 있다
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
+
+  // 일부 run만 실패하면 받은 run으로 그리고 실패는 위에 한 줄로 알린다. 하나도 못 받았을 때만 본문을 오류로 바꾼다.
+  const hasTs = Object.keys(ts.byRun).length > 0;
+  const runLabel = (id: string) => {
+    const r = data.rows.find(x => x.id === id);
+    return r ? `#${r.index}` : id;
+  };
+  const tsWarning = isTs && hasTs && ts.errors.length > 0 && !missing.length
+    ? `일부 run을 불러오지 못했습니다: ${ts.errors.map(e => `${runLabel(e.runId)} — ${e.message}`).join(', ')}`
+    : null;
 
   let body;
   if (loading || (isTs && ts.isLoading)) body = <Center h="100%"><Loader size="sm" /></Center>;
   else if (missing.length) body = <Center h="100%"><Text size="sm" c="orange" data-testid="panel-missing">찾을 수 없음: {missing.join(', ')}</Text></Center>;
-  else if (isTs && ts.error) body = <Center h="100%"><Text size="sm" c="red">{ts.error.message}</Text></Center>;
+  else if (isTs && ts.error && !hasTs) body = <Center h="100%"><Text size="sm" c="red">{ts.error.message}</Text></Center>;
   else if (isEmptyChart(result)) body = <Center h="100%"><Text size="sm" c="dimmed" data-testid="panel-empty">{result.empty}</Text></Center>;
   else {
     body = (
-      <ReactECharts ref={chartRef} theme={echartsTheme} option={result} notMerge onEvents={onEvents} onChartReady={applyGroup}
-        data-testid="panel-chart" style={{ height: '100%', width: '100%' }} />
+      <ChartErrorBoundary resetKey={result}>
+        <ReactECharts ref={chartRef} theme={echartsTheme} option={result} notMerge onEvents={onEvents} onChartReady={applyGroup}
+          data-testid="panel-chart" style={{ height: '100%', width: '100%' }} />
+      </ChartErrorBoundary>
     );
   }
 
@@ -124,6 +140,7 @@ export function Panel({ spec, data, loading = false, onEdit, onRemove, onMaximiz
           </Menu.Dropdown>
         </Menu>
       </Group>
+      {tsWarning && <Text size="xs" c="orange" lineClamp={2} title={tsWarning} data-testid="panel-ts-warning">{tsWarning}</Text>}
       <div style={{ height, minHeight: 0 }}>{body}</div>
     </Paper>
   );

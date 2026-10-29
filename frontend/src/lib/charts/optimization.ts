@@ -2,7 +2,7 @@
 // pareto 3D는 echarts-gl이 필요하다 (surface.ts와 같이 부수효과 import, 테스트에서는 mock).
 import 'echarts-gl';
 import type { EChartsOption } from 'echarts';
-import type { Direction } from '../../api/types';
+import type { Direction, OptimizationRequest } from '../../api/types';
 import { paretoFront } from '../pareto';
 import { bestSoFar, spearman } from '../vizStats';
 import type { FieldRef, PanelSpec, WorkbenchData } from '../workbench';
@@ -52,21 +52,44 @@ export const convergence: ChartBuilder = (spec, data, selected) => {
 
 // ---- pareto ----
 
+/** 최적화 잡 하나만 보고 있고 모든 축이 그 잡의 목적함수면 잡 설정의 축별 방향. 아니면 null. */
+function jobDirections(refs: FieldRef[], data: WorkbenchData): Direction[] | null {
+  if (data.jobs.length !== 1 || data.jobs[0].kind !== 'optimization') return null;
+  const objs = (data.jobs[0].config as OptimizationRequest).objectives ?? [];
+  const dirs: Direction[] = [];
+  for (const r of refs) {
+    if (r.kind !== 'objective') return null;
+    const id = data.objectives.find(o => o.name === r.name)?.id;
+    const o = objs.find(x => x.objectiveId === id);
+    if (!o) return null;
+    dirs.push(o.direction);
+  }
+  return dirs;
+}
+
 export const pareto: ChartBuilder = (spec, data, selected) => {
   const { x, y, z } = spec;
   if (!x || !y) return NO_VALUE;
   const refs: FieldRef[] = z ? [x, y, z] : [x, y];
   const dir: Direction = spec.objectiveDir ?? 'minimize';
+  const fromJob = jobDirections(refs, data);
+  const dirs = fromJob ?? refs.map(() => dir);
+  // 축마다 방향이 다를 수 있는데 하나로 적용하고 있음을 차트에 밝힌다
+  const note = fromJob ? undefined : {
+    text: '', subtext: `모든 축에 같은 방향(${dir === 'minimize' ? '최소화' : '최대화'}) 적용`,
+    right: 8, top: 0, subtextStyle: { fontSize: 11 },
+  };
   const rows = data.rows.filter(r => refs.every(f => fieldValue(r, f, data.objectives) !== null));
   if (!rows.length) return NO_VALUE;
   const pts = rows.map(r => refs.map(f => fieldValue(r, f, data.objectives) as number));
-  const front = paretoFront(pts, refs.map(() => dir));
+  const front = paretoFront(pts, dirs);
   const item = (i: number) => ({
     id: rows[i].id, name: `#${rows[i].index}`, value: pts[i],
     itemStyle: { color: front[i] ? BEST_COLOR : MUTED_COLOR, opacity: itemOpacity(rows[i].id, selected) },
   });
   if (z) {
     return {
+      title: note,
       tooltip: {},
       grid3D: {},
       xAxis3D: { type: 'value', name: x.name },
@@ -78,6 +101,7 @@ export const pareto: ChartBuilder = (spec, data, selected) => {
   // 앞쪽 점을 x 순으로 이어 front 선을 그린다
   const line = pts.filter((_, i) => front[i]).map(p => [p[0], p[1]]).sort((a, b) => a[0] - b[0]);
   return {
+    title: note,
     tooltip: { trigger: 'item' },
     legend: {},
     brush: { toolbox: ['rect', 'clear'], xAxisIndex: 0, yAxisIndex: 0 },

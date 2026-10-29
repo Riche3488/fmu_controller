@@ -72,6 +72,25 @@ describe('optimization charts', () => {
     expect(o.series[1].type).toBe('line');
   });
 
+  it('pareto: 최적화 잡 하나면 잡 설정의 축별 방향 (cost 최소, time 최대)', () => {
+    const job = {
+      id: 'j1', kind: 'optimization',
+      config: { objectives: [{ objectiveId: 'o1', direction: 'minimize' }, { objectiveId: 'o2', direction: 'maximize' }] },
+    } as Any;
+    const o = opt(buildChart(spec('pareto', { x: C, y: T }), { ...data, jobs: [job] }, []));
+    const front = o.series[0].data.filter((d: Any) => d.itemStyle.color === '#ee6666').map((d: Any) => d.id);
+    expect(front).toEqual(['r4']);   // (5, 6)이 나머지를 모두 지배한다
+    expect(o.title).toBeUndefined();
+    // 축이 잡 목적함수가 아니면(파라미터) 한 방향 + 안내
+    const f = opt(buildChart(spec('pareto', { x: C, y: P }), { ...data, jobs: [job] }, []));
+    expect(f.title.subtext).toBe('모든 축에 같은 방향(최소화) 적용');
+  });
+
+  it('pareto: 잡을 특정할 수 없으면 한 방향 + 안내 문구', () => {
+    const o = opt(buildChart(spec('pareto', { x: C, y: T, objectiveDir: 'maximize' }), data, []));
+    expect(o.title.subtext).toBe('모든 축에 같은 방향(최대화) 적용');
+  });
+
   it('pareto 3D: scatter3D', () => {
     const o = opt(buildChart(spec('pareto', { x: C, y: T, z: H }), data, []));
     expect(o.series[0].type).toBe('scatter3D');

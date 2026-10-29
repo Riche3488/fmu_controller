@@ -155,13 +155,20 @@ describe('dashboardFromConfig', () => {
 });
 
 describe('timeseriesRunIds', () => {
-  const rows = Array.from({ length: 80 }, (_, i) => ({ id: `r${i}` })) as RunRow[];
+  const rows = Array.from({ length: 80 }, (_, i) => ({ id: `r${i}`, status: 'ok' })) as RunRow[];
   const ts: PanelSpec = { id: 'a', title: 't', chart: 'tsOverlay' };
   test('선택 없으면 처음 5개, 있으면 최대 50개, 기준 run 포함', () => {
     expect(timeseriesRunIds(ts, { rows }, [])).toEqual(['r0', 'r1', 'r2', 'r3', 'r4']);
     expect(timeseriesRunIds(ts, { rows }, rows.map(r => r.id))).toHaveLength(50);
     expect(timeseriesRunIds({ ...ts, chart: 'tsDiff', refRunId: 'r70' }, { rows }, ['r1'])).toEqual(['r1', 'r70']);
     expect(timeseriesRunIds({ ...ts, chart: 'scatter' }, { rows }, ['r1'])).toEqual([]);
+  });
+  test('실패 run은 빼고 처음 5개, 지금 데이터에 없는 선택 run은 뺀다', () => {
+    const mixed = rows.map((r, i) => (i === 1 || i === 3 ? { ...r, status: 'failed' } : r)) as RunRow[];
+    expect(timeseriesRunIds(ts, { rows: mixed }, [])).toEqual(['r0', 'r2', 'r4', 'r5', 'r6']);
+    expect(timeseriesRunIds(ts, { rows: mixed }, ['r1', 'r2', 'gone'])).toEqual(['r2']);
+    // 선택이 모두 필터 밖이면 아무것도 그리지 않는다 (처음 5개로 돌아가지 않음)
+    expect(timeseriesRunIds(ts, { rows: mixed }, ['gone'])).toEqual([]);
   });
 });
 

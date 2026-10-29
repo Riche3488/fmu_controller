@@ -100,6 +100,12 @@ describe('idwGrid', () => {
   test('빈 점이면 빈 결과', () => {
     expect(idwGrid([], 3, 3)).toEqual({ xs: [], ys: [], z: [] });
   });
+  test('점 200000개도 범위 계산에서 스택이 넘치지 않는다', () => {
+    const pts = Array.from({ length: 200000 }, (_, i) => ({ x: i, y: -i, z: 1 }));
+    const g = idwGrid(pts, 2, 2);
+    expect(g.xs).toEqual([0, 199999]);
+    expect(g.ys).toEqual([-199999, 0]);
+  });
 });
 
 describe('fft', () => {

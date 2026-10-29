@@ -122,8 +122,14 @@ export function idwGrid(
   if (!p.length) return { xs: [], ys: [], z: [] };
   const lin = (lo: number, hi: number, n: number) =>
     Array.from({ length: n }, (_, i) => (n === 1 ? lo : lo + ((hi - lo) * i) / (n - 1)));
-  const xmin = Math.min(...p.map((q) => q.x)), xmax = Math.max(...p.map((q) => q.x));
-  const ymin = Math.min(...p.map((q) => q.y)), ymax = Math.max(...p.map((q) => q.y));
+  // 펼침(Math.min(...arr))은 점이 많으면 호출 스택을 넘는다
+  let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
+  for (const q of p) {
+    if (q.x < xmin) xmin = q.x;
+    if (q.x > xmax) xmax = q.x;
+    if (q.y < ymin) ymin = q.y;
+    if (q.y > ymax) ymax = q.y;
+  }
   const xs = lin(xmin, xmax, nx);
   const ys = lin(ymin, ymax, ny);
   const z = ys.map((gy) =>

@@ -69,10 +69,14 @@ export function needsTimeseries(kind: ChartKind): boolean {
 
 const TS_DEFAULT_RUNS = 5;
 const TS_MAX_RUNS = 50;
-/** 시계열 패널이 그릴 run: 선택(최대 50) 또는 처음 5개. tsDiff 기준 run은 함께 받는다. */
+/** 시계열 패널이 그릴 run: 선택(최대 50) 또는 처음 5개. tsDiff 기준 run은 함께 받는다.
+ * 시계열이 없는 실패 run과 지금 필터 밖의 선택 run은 뺀다. */
 export function timeseriesRunIds(spec: PanelSpec, data: Pick<WorkbenchData, 'rows'>, selected: string[]): string[] {
   if (!needsTimeseries(spec.chart)) return [];
-  const ids = selected.length ? selected.slice(0, TS_MAX_RUNS) : data.rows.slice(0, TS_DEFAULT_RUNS).map(r => r.id);
+  const ok = data.rows.filter(r => r.status === 'ok').map(r => r.id);
+  const okSet = new Set(ok);
+  const picked = selected.filter(id => okSet.has(id));
+  const ids = selected.length ? picked.slice(0, TS_MAX_RUNS) : ok.slice(0, TS_DEFAULT_RUNS);
   return spec.refRunId && !ids.includes(spec.refRunId) ? [...ids, spec.refRunId] : ids;
 }
 
