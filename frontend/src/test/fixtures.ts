@@ -1,3 +1,4 @@
+import { expect } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import type { ApiClient } from '../api/client';
 import { MOCK_FMU_ID } from '../api/mock/mockClient';
