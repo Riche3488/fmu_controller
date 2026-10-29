@@ -1,7 +1,7 @@
 """API 스키마 — frontend/src/api/types.ts 와 동일한 형태 (JSON은 camelCase)."""
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
 
 
@@ -62,3 +62,39 @@ class SimSettings(CamelModel):
 class Timeseries(CamelModel):
     time: list[float]
     series: dict[str, list[float | None]]
+
+
+class ObjectiveIn(CamelModel):
+    name: str = Field(min_length=1)
+    code: str
+
+    @field_validator("name")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("이름을 입력하세요")
+        return v
+
+
+class ObjectiveOut(CamelModel):
+    id: str
+    name: str
+    code: str
+    code_hash: str
+    updated_at: datetime
+
+
+class ObjectiveValue(CamelModel):
+    value: float | None
+    error: str | None
+
+
+class ObjectiveTestIn(CamelModel):
+    code: str
+    run_id: str
+
+
+class ObjectiveTestResult(ObjectiveValue):
+    stdout: str
+    duration_ms: int
