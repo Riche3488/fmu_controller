@@ -3,6 +3,7 @@
 // - 목적함수 값은 listRuns 호출 시점의 현재 코드로 계산한다 (코드가 바뀌면 값도 바뀐다).
 import { ApiError, type ApiClient } from '../client';
 import type {
+  ObjectiveTestResult,
   BatchRequest,
   CandidatePreview,
   FmuSummary,
@@ -411,6 +412,16 @@ export function createMockClient(opts: { tickMs?: number; empty?: boolean } = {}
       const run = runs.get(runId);
       if (!run) throw new ApiError('run을 찾을 수 없습니다', 404);
       return { ...evaluateMock(code, run, isOriginalVariant(run.variantId)), stdout: '', durationMs: 12 };
+    },
+    async testObjectiveBatch({ code, runIds }) {
+      const results: Record<string, ObjectiveTestResult> = {};
+      for (const id of runIds) {
+        const run = runs.get(id);
+        if (!run) results[id] = { value: null, error: 'run을 찾을 수 없습니다', stdout: '', durationMs: 0 };
+        else if (run.status !== 'ok') results[id] = { value: null, error: '시뮬레이션이 실패한 run으로는 테스트할 수 없습니다', stdout: '', durationMs: 0 };
+        else results[id] = { ...evaluateMock(code, run, isOriginalVariant(run.variantId)), stdout: '', durationMs: 12 };
+      }
+      return { results };
     },
 
     async createBatch(req) {

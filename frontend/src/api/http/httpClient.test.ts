@@ -37,6 +37,14 @@ describe('httpClient', () => {
     }));
   });
 
+  test('testObjectiveBatch posts to test-batch', async () => {
+    const fetchFn = mockFetch({ results: {} });
+    await createHttpClient().testObjectiveBatch({ code: 'c', runIds: ['a'] });
+    expect(fetchFn).toHaveBeenCalledWith('/api/objectives/test-batch', expect.objectContaining({
+      method: 'POST', body: JSON.stringify({ code: 'c', runIds: ['a'] }),
+    }));
+  });
+
   test('non-2xx throws ApiError with server detail', async () => {
     mockFetch({ detail: '같은 이름의 목적함수가 이미 있습니다' }, 409);
     const err = await createHttpClient().createObjective({ name: 'n', code: 'c' }).catch(e => e);

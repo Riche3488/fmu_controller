@@ -102,6 +102,15 @@ class ObjectiveTestResult(ObjectiveValue):
     duration_ms: int
 
 
+class ObjectiveTestBatchIn(CamelModel):
+    code: str
+    run_ids: list[str] = Field(min_length=1, max_length=200)
+
+
+class ObjectiveTestBatchOut(CamelModel):
+    results: dict[str, ObjectiveTestResult]
+
+
 class SweepList(CamelModel):
     name: str
     mode: Literal["list"]

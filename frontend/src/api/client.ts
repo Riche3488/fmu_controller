@@ -45,6 +45,8 @@ export interface ApiClient {
   updateObjective(id: string, input: ObjectiveInput): Promise<Objective>;
   deleteObjective(id: string): Promise<void>;
   testObjective(req: { code: string; runId: string }): Promise<ObjectiveTestResult>;
+  /** 저장 전 코드로 run 여러 개(최대 200)를 한 번에 계산. run별 오류는 그 run 결과에 담긴다. */
+  testObjectiveBatch(req: { code: string; runIds: string[] }): Promise<{ results: Record<string, ObjectiveTestResult> }>;
 
   createBatch(req: BatchRequest): Promise<Job>;
   createOptimization(req: OptimizationRequest): Promise<Job>;

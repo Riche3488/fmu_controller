@@ -80,6 +80,7 @@ export function createHttpClient(baseUrl = '/api'): ApiClient {
     updateObjective: (id, input) => request('PUT', `/objectives/${id}`, input),
     deleteObjective: id => request('DELETE', `/objectives/${id}`),
     testObjective: req => request('POST', '/objectives/test', req),
+    testObjectiveBatch: req => request('POST', '/objectives/test-batch', req),
 
     createBatch: req => request('POST', '/jobs/batch', req),
     createOptimization: req => request('POST', '/jobs/optimization', req),

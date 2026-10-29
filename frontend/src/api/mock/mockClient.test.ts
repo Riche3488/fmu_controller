@@ -102,6 +102,20 @@ describe('mock client', () => {
     expect(res.value).toBeNull();
   });
 
+  test('testObjectiveBatch evaluates runs and reports per-run errors', async () => {
+    const api = createMockClient({ tickMs: 10 });
+    const job = await api.createBatch(batchReq({ params: [{ name: 'p', mode: 'list', values: [1, 2] }] }));
+    await runToEnd(api, job.id);
+    const runs = await api.listRuns({ jobIds: [job.id] });
+    const ids = runs.items.map(r => r.id);
+    const code = 'def evaluate(r, p):\n    return 1\n';
+    const { results } = await api.testObjectiveBatch({ code, runIds: [...ids, 'nope'] });
+    expect(Object.keys(results)).toEqual([...ids, 'nope']);
+    expect(results[ids[0]].error).toBeNull();
+    expect(typeof results[ids[0]].value).toBe('number');
+    expect(results.nope).toEqual({ value: null, error: 'run을 찾을 수 없습니다', stdout: '', durationMs: 0 });
+  });
+
   test('batch crosses params with resource candidates and tags variants', async () => {
     const api = createMockClient({ tickMs: 10 });
     const [nedc] = (await api.listResources(FMU_ID)).filter(r => r.path === MOCK_NEDC_PATH);
