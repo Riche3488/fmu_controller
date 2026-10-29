@@ -62,6 +62,22 @@ describe('BatchSetupPage', () => {
     expect(await screen.findByRole('heading', { level: 2, name: /잡 모니터/ })).toBeInTheDocument();
   });
 
+  test('record 쿼리의 변수를 기록 변수에 합친다', async () => {
+    const client = createMockClient({ tickMs: 10 });
+    const spy = vi.spyOn(client, 'createBatch');
+    const record = encodeURIComponent('controlBus.chassisBus.longitudinalVelocity,road.stopTable[1,2],extra.signal');
+    renderApp({ route: `/fmus/${MOCK_FMU_ID}/run?tab=batch&record=${record}`, client });
+    await addParam('road.stopTable[1,1]');
+    await setValues('road.stopTable[1,1]', '40');
+    await waitFor(() => expect(screen.getByRole('button', { name: '배치 실행' })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: '배치 실행' }));
+    await waitFor(() => expect(spy).toHaveBeenCalled());
+    const rec = spy.mock.calls[0][0].recordVariables;
+    expect(rec).toHaveLength(142);
+    expect(rec).toContain('road.stopTable[1,2]');
+    expect(rec).toContain('extra.signal');
+  });
+
   test('asks for confirmation above 1000 cases', async () => {
     const client = createMockClient({ tickMs: 10 });
     const spy = vi.spyOn(client, 'createBatch');

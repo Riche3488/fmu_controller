@@ -2,8 +2,8 @@ import {
   ActionIcon, Alert, Button, Card, Group, Modal, NumberInput, SegmentedControl, Stack, Table, Text, TextInput, Title,
 } from '@mantine/core';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../api/client';
 import type { BatchRequest, Sampling, SweepParam } from '../api/types';
 import { ResourceGroupSection, batchResourcesForRequest, useResources } from '../components/ResourceGroupSection';
@@ -12,6 +12,7 @@ import {
 } from '../components/RunSettingsSection';
 import { nowStamp, usePresetEditor } from '../components/usePresetEditor';
 import { VariablePicker } from '../components/VariablePicker';
+import { parseRecordParam } from '../lib/compat';
 import {
   DEFAULT_N_SAMPLES, applyBatchPresetConfig, batchFormToPresetConfig, batchRequestToPresetConfig, type BatchForm,
 } from '../lib/presets';
@@ -28,6 +29,16 @@ export function BatchSetupPage() {
   const navigate = useNavigate();
   const fmu = useQuery({ queryKey: ['fmu', fmuId], queryFn: () => api.getFmu(fmuId) });
   const [settings, setSettings] = useRunSettings(fmu.data);
+  // ?record=a,b (목적함수 설계기의 호환성 링크): 기본 설정이 준비되면 한 번 기록 변수에 합친다
+  const [searchParams] = useSearchParams();
+  const recordParam = searchParams.get('record');
+  const recordMerged = useRef(false);
+  useEffect(() => {
+    if (recordMerged.current || !settings || !recordParam) return;
+    recordMerged.current = true;
+    const extra = parseRecordParam(recordParam).filter(v => !settings.recordVariables.includes(v));
+    if (extra.length) setSettings({ ...settings, recordVariables: [...settings.recordVariables, ...extra] });
+  }, [settings, recordParam, setSettings]);
   const [fixedError, setFixedError] = useState<string | null>(null);
   const [name, setName] = useState(() => `batch-${nowStamp()}`);
   const [rows, setRows] = useState<Row[]>([]);

@@ -38,3 +38,27 @@ export function fmuCompat(required: string[], fmuVarNames: string[]): { recordab
 export function summarize(c: JobCompat[]): { okJobs: number; totalJobs: number } {
   return { okJobs: c.filter((x) => x.ok).length, totalJobs: c.length };
 }
+
+/** ④ 실행 링크의 `record` 쿼리 값 (콤마 목록). */
+export function recordParam(names: string[]): string {
+  return names.join(',');
+}
+
+/** `record` 쿼리 → 변수 이름 목록. `a[1,2]`처럼 대괄호 안의 콤마는 이름의 일부로 본다. */
+export function parseRecordParam(s: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of s) {
+    if (ch === '[') depth += 1;
+    else if (ch === ']') depth = Math.max(0, depth - 1);
+    if (ch === ',' && depth === 0) {
+      out.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map((x) => x.trim()).filter((x) => x.length > 0);
+}

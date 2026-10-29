@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { BatchRequest, Job } from '../api/types';
 import { DEFAULT_SPEC, type BuilderSpec } from './builder/spec';
 import { generateCode } from './builder/codegen';
-import { fmuCompat, jobCompat, requiredColumns, summarize } from './compat';
+import { fmuCompat, jobCompat, parseRecordParam, recordParam, requiredColumns, summarize } from './compat';
 
 const SPEC: BuilderSpec = { ...DEFAULT_SPEC, calc: { kind: 'max', signal: 'speed' } };
 
@@ -54,5 +54,15 @@ describe('fmuCompat / summarize', () => {
   test('summarize', () => {
     const c = jobCompat(['x'], [job('1', ['x']), job('2', [])], []);
     expect(summarize(c)).toEqual({ okJobs: 1, totalJobs: 2 });
+  });
+});
+
+describe('record 쿼리 (콤마 목록)', () => {
+  test('배열 원소 이름의 콤마는 구분자가 아니다', () => {
+    expect(parseRecordParam('a,b[1,2], c ,,d')).toEqual(['a', 'b[1,2]', 'c', 'd']);
+  });
+  test('왕복', () => {
+    const names = ['x.y', 'road.stopTable[1,1]', 'z'];
+    expect(parseRecordParam(recordParam(names))).toEqual(names);
   });
 });
