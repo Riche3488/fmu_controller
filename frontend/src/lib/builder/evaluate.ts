@@ -84,9 +84,11 @@ export function triggerIndex(
     }
     case 'extremum': {
       const s = sig(tr.signal);
-      if (!n) throw new BuilderError(MSG.noTrigger);
+      // NaN이 아닌 첫 값에서 시작 (Python nanargmax와 같은 첫 번째 극값)
       let best = 0;
-      for (let i = 1; i < n; i++) {
+      while (best < n && Number.isNaN(s[best])) best++;
+      if (best >= n) throw new BuilderError(MSG.noTrigger);
+      for (let i = best + 1; i < n; i++) {
         if (tr.which === 'max' ? s[i] > s[best] : s[i] < s[best]) best = i;
       }
       return best;
@@ -211,6 +213,9 @@ function evalDerived(s: BuilderSpec, d: BuilderData): Record<string, Float64Arra
   const cols: Record<string, Float64Array> = { ...d.cols, time: d.time };
   const out: Record<string, Float64Array> = {};
   for (const dv of s.derived) {
+    if (dv.name === 'time' || Object.hasOwn(d.cols, dv.name)) {
+      throw new BuilderError(`파생 신호 이름이 컬럼과 겹칩니다: ${dv.name}`);
+    }
     const arr = evalExpr(parseExpr(dv.expr), cols, d.params, n);
     out[dv.name] = arr;
     cols[dv.name] = arr;

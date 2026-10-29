@@ -19,7 +19,7 @@ describe('expr', () => {
   test('모르는 함수는 오류', () => expect(() => parseExpr('foo(x)')).toThrow('알 수 없는 함수: foo'));
   test('괄호 불일치', () => expect(() => parseExpr('(x+1')).toThrow('괄호가 닫히지 않았습니다'));
   test('Python 변환', () =>
-    expect(py('sqrt(`a[1]`)*params.k')).toBe('np.sqrt(col("a[1]")) * float(params["k"])'));
+    expect(py('sqrt(`a[1]`)*params.k')).toBe('np.sqrt(col("a[1]")) * np.float64(params["k"])'));
 
   test('ExprError 클래스', () => {
     expect(() => parseExpr('1 +')).toThrow(ExprError);
@@ -69,6 +69,24 @@ describe('expr', () => {
     expect(py('diff(a*2)+cumsum(a)+log(a)')).toBe(
       '_diff(col("a") * 2) + np.cumsum(col("a")) + np.log(col("a"))',
     );
-    expect(py('params["k"]')).toBe('float(params["k"])');
+    expect(py('params["k"]')).toBe('np.float64(params["k"])');
+  });
+  test('유한하지 않은 숫자 리터럴은 오류', () => {
+    expect(() => parseExpr('1e999')).toThrow(ExprError);
+    expect(() => parseExpr('x * 1e999')).toThrow('유한하지 않은 숫자: 1e999');
+  });
+  test('Python: 리터럴끼리 연산은 np.float64로 (0 나눗셈이 예외가 아니라 inf)', () => {
+    expect(py('1/0')).toBe('np.float64(1) / 0');
+    expect(py('x * (2**-1)')).toBe('col("x") * np.float64(2) ** -1');
+    expect(py('min(1, 2) ** -1')).toBe('np.float64(np.minimum(1, 2)) ** -1');
+    expect(py('abs(-3) * 2')).toBe('np.float64(np.abs(-3)) * 2');
+    expect(py('sqrt(4) / 0')).toBe('np.sqrt(4) / 0');
+    expect(py('params.k / 0')).toBe('np.float64(params["k"]) / 0');
+  });
+  test('Python: 2**53 이상 정수 리터럴은 지수 표기', () => expect(py('x * 1e20')).toBe('col("x") * 1e+20'));
+  test('Python: 스칼라 diff·cumsum은 시간 길이로 늘린다', () => {
+    expect(py('diff(2)')).toBe('_diff(np.full_like(col("time"), 2))');
+    expect(py('cumsum(params.k)')).toBe('np.cumsum(np.full_like(col("time"), np.float64(params["k"])))');
+    expect(py('cumsum(diff(1))')).toBe('np.cumsum(_diff(np.full_like(col("time"), 1)))');
   });
 });

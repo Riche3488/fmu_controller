@@ -103,6 +103,17 @@ describe('트리거', () => {
     expect(all({ kind: 'extremum', signal: 'v', which: 'max' }).trace!.triggerTimes).toEqual([3]);
     expect(all({ kind: 'extremum', signal: 'v', which: 'min' }).trace!.triggerTimes).toEqual([0]);
   });
+  test('extremum은 NaN을 건너뛴다', () => {
+    const dd: BuilderData = { time: f([0, 1, 2, 3]), cols: { s: f([NaN, 1, 3, 2]) }, params: {} };
+    const r = evaluateSpec({ ...base, triggers: [{ kind: 'extremum', signal: 's', which: 'max' }] }, dd);
+    expect(r.trace!.triggerTimes).toEqual([2]);
+    const rmin = evaluateSpec({ ...base, triggers: [{ kind: 'extremum', signal: 's', which: 'min' }] }, dd);
+    expect(rmin.trace!.triggerTimes).toEqual([1]);
+    const nan: BuilderData = { ...dd, cols: { s: f([NaN, NaN, NaN, NaN]) } };
+    expect(evaluateSpec({ ...base, triggers: [{ kind: 'extremum', signal: 's', which: 'max' }] }, nan).error).toBe(
+      '트리거 조건을 만족하는 시점이 없습니다',
+    );
+  });
   test('hold', () => {
     const dd: BuilderData = { ...d, cols: { s: f([1, 0, 1, 1, 1]) } };
     const r = evaluateSpec(
@@ -192,6 +203,14 @@ describe('집계·오류', () => {
     expect(evaluateSpec({ ...DEFAULT_SPEC, derived: [{ name: 'q', expr: 'zz+1' }], calc: { kind: 'max', signal: 'q' } }, d)).toMatchObject({
       value: null, error: '컬럼이 없습니다: zz', trace: null,
     });
+  });
+  test('파생 신호 이름이 컬럼·time과 겹치면 오류', () => {
+    expect(evaluateSpec({ ...DEFAULT_SPEC, derived: [{ name: 'x', expr: 'v*2' }] }, d)).toMatchObject({
+      value: null, error: '파생 신호 이름이 컬럼과 겹칩니다: x', trace: null,
+    });
+    expect(evaluateSpec({ ...DEFAULT_SPEC, derived: [{ name: 'time', expr: 'v*2' }] }, d).error).toBe(
+      '파생 신호 이름이 컬럼과 겹칩니다: time',
+    );
   });
   test('파생식 파싱 오류', () => {
     const r = evaluateSpec({ ...DEFAULT_SPEC, derived: [{ name: 'q', expr: '(x+1' }] }, d);

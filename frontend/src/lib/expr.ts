@@ -39,7 +39,10 @@ function tokenize(src: string): Tok[] {
     const rest = src.slice(i);
     let m: RegExpMatchArray | null;
     if ((m = rest.match(NUM_RE))) {
-      out.push({ t: 'num', v: Number(m[0]) });
+      const v = Number(m[0]);
+      // 1e999 같은 리터럴은 Python 코드로 옮길 수 없다
+      if (!Number.isFinite(v)) throw new ExprError(`유한하지 않은 숫자: ${m[0]}`);
+      out.push({ t: 'num', v });
       i += m[0].length;
     } else if ((m = rest.match(ID_RE))) {
       out.push({ t: 'id', v: m[0] });
@@ -257,7 +260,7 @@ export function evalExpr(
   return typeof v === 'number' ? new Float64Array(n).fill(v) : v;
 }
 
-// 생성 코드는 `def _diff(x): return np.diff(x, prepend=x[0])` 도우미를 정의해야 한다.
+// 생성 코드는 `_diff(x)` 도우미(길이 유지, 첫 값 0)를 정의해야 하고, colVar("time")은 시간 배열이어야 한다.
 const PREC = { add: 1, mul: 2, un: 3, pow: 4, atom: 5 };
 const PY_FN: Record<ExprFn, string> = {
   sqrt: 'np.sqrt', abs: 'np.abs', sin: 'np.sin', cos: 'np.cos', tan: 'np.tan', exp: 'np.exp',
@@ -265,13 +268,40 @@ const PY_FN: Record<ExprFn, string> = {
   diff: '_diff', cumsum: 'np.cumsum',
 };
 
+// TS에서 스칼라(number)로 계산되는 식인지
+function isScalar(e: Expr): boolean {
+  switch (e.k) {
+    case 'num': case 'param': return true;
+    case 'col': return false;
+    case 'un': return isScalar(e.a);
+    case 'bin': return isScalar(e.a) && isScalar(e.b);
+    case 'call': return e.fn !== 'diff' && e.fn !== 'cumsum' && e.args.every(isScalar);
+  }
+}
+
+// Python에서 np.float64가 아닌 스칼라(int·float·np.int64)가 될 수 있는 식.
+// 이런 값끼리의 연산은 0 나눗셈 예외·정수 오버플로·복소수가 나므로 왼쪽을 np.float64로 감싼다.
+function maybePlainScalar(e: Expr): boolean {
+  switch (e.k) {
+    case 'num': return true;
+    case 'un': return maybePlainScalar(e.a);
+    case 'call': return (e.fn === 'abs' || e.fn === 'min' || e.fn === 'max') && e.args.every(maybePlainScalar);
+    default: return false;
+  }
+}
+
+function pyNum(v: number): string {
+  // 2**53 이상 정수는 Python int가 되지 않게 지수 표기
+  return Number.isInteger(v) && Math.abs(v) >= 2 ** 53 ? v.toExponential() : String(v);
+}
+
 export function exprToPython(e: Expr, colVar: (name: string) => string): string {
   // [코드, 우선순위]
   const go = (x: Expr): [string, number] => {
     switch (x.k) {
-      case 'num': return [String(x.v), x.v < 0 ? PREC.un : PREC.atom];
+      case 'num': return [pyNum(x.v), x.v < 0 ? PREC.un : PREC.atom];
       case 'col': return [colVar(x.name), PREC.atom];
-      case 'param': return [`float(params[${JSON.stringify(x.name)}])`, PREC.atom];
+      case 'param': return [`np.float64(params[${JSON.stringify(x.name)}])`, PREC.atom];
       case 'un': {
         const [s, p] = go(x.a);
         return [p < PREC.un || x.a.k === 'un' ? `-(${s})` : `-${s}`, PREC.un];
@@ -283,10 +313,17 @@ export function exprToPython(e: Expr, colVar: (name: string) => string): string 
         // 좌결합 연산: 오른쪽 자식은 같은 우선순위도 괄호. **: 왼쪽 자식은 같은/낮은 우선순위 괄호
         const wrapA = x.op === '**' ? pa <= PREC.pow : pa < own;
         const wrapB = x.op === '**' ? pb < PREC.un : pb <= own;
-        return [`${wrapA ? `(${sa})` : sa} ${x.op} ${wrapB ? `(${sb})` : sb}`, own];
+        const left = maybePlainScalar(x.a) && maybePlainScalar(x.b) ? `np.float64(${sa})` : wrapA ? `(${sa})` : sa;
+        return [`${left} ${x.op} ${wrapB ? `(${sb})` : sb}`, own];
       }
-      case 'call':
-        return [`${PY_FN[x.fn]}(${x.args.map((a) => go(a)[0]).join(', ')})`, PREC.atom];
+      case 'call': {
+        const args = x.args.map((a) => {
+          const s = go(a)[0];
+          // TS는 스칼라 diff·cumsum 인자를 길이 n으로 늘려서 계산한다
+          return (x.fn === 'diff' || x.fn === 'cumsum') && isScalar(a) ? `np.full_like(${colVar('time')}, ${s})` : s;
+        });
+        return [`${PY_FN[x.fn]}(${args.join(', ')})`, PREC.atom];
+      }
     }
   };
   return go(e)[0];
