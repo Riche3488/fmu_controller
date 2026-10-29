@@ -1,6 +1,6 @@
 # FMU Controller
 
-FMU 파라미터를 병렬로 바꿔 가며 배치 해석·최적화(단일/다목적)를 수행하고, 결과 시계열을 FMU별로 누적·조회·비교하는 로컬 웹 앱입니다.
+FMU 파라미터와 `resources/` 파일을 병렬로 바꿔 가며 배치 해석·최적화(단일/다목적)를 수행하고, 결과 시계열을 FMU·Resource 조합별로 누적·조회·비교하는 로컬 웹 앱입니다.
 
 - 백엔드: Python 3.12, FastAPI, FMPy(ModelExchange/CVode), Ray(불가 시 `multiprocessing.Pool`), SQLite + Parquet, Optuna
 - 프론트엔드: React + Mantine + Monaco + ECharts (Vite)
@@ -18,7 +18,11 @@ cd frontend; npm install; cd ..
 
 Ray 설치가 안 되는 환경이면 `pip install -e "backend[test]"`만 설치하세요. 서버가 자동으로 Pool로 대체합니다.
 
+GP(Gaussian Process) 베이지안 최적화를 쓰려면 PyTorch가 필요합니다: `backend\.venv\python.exe -m pip install -e "backend[gp]"`. 설치하지 않으면 최적화 화면에서 GP가 비활성으로 표시됩니다 (TPE는 항상 사용 가능).
+
 ## 실행
+
+탐색기에서 `run.bat`을 더블클릭하면 서버가 뜨고 준비되는 대로 브라우저가 열립니다. 인자는 `run.ps1`과 같습니다 (`run.bat -Parallel pool`). 인자를 주면 브라우저는 자동으로 열지 않습니다.
 
 ```powershell
 .\run.ps1                  # http://127.0.0.1:8000
@@ -36,7 +40,21 @@ Ray 설치가 안 되는 환경이면 `pip install -e "backend[test]"`만 설치
 | `FMUC_EVAL_WORKERS` | 2 | 목적함수 평가 전용 슬롯 수 (시뮬레이션과 분리) |
 | `FMUC_STATIC_DIR` | `frontend/dist` | 빌드된 프론트엔드 |
 
-UI만 개발할 때는 `cd frontend; $env:VITE_API_FMUS='mock'; ...; npm run dev`처럼 도메인(`FMUS`, `OBJECTIVES`, `JOBS`, `RUNS`)별로 mock을 켤 수 있습니다. dev 서버는 `/api`를 `FMUC_API`(기본 `http://127.0.0.1:8000`)로 프록시합니다.
+UI만 개발할 때는 `cd frontend; $env:VITE_API_FMUS='mock'; ...; npm run dev`처럼 도메인(`FMUS`, `RESOURCES`, `OBJECTIVES`, `JOBS`, `RUNS`)별로 mock을 켤 수 있습니다. dev 서버는 `/api`를 `FMUC_API`(기본 `http://127.0.0.1:8000`)로 프록시합니다.
+
+## Resource 파일 후보와 Resource 조합
+
+FMU 안 `resources/` 폴더의 파일(`.mat`, `.tir`, `.csv` 등 형식 무관)을 바꿔 끼워 해석할 수 있습니다.
+
+1. **후보 올리기**: FMU 상세 → **Resources** 탭에서 파일마다 밖에서 수정한 **후보 파일**을 올립니다. 원본과 확장자가 같아야 합니다. 미리보기: 텍스트는 내용, `.mat`(v4/v5)은 변수 목록과 그래프.
+2. **배치**: 배치 설정의 **Resource 파일** 섹션에서 파일마다 후보를 여러 개 고르면 *파라미터 케이스 × Resource 조합*을 모두 실행합니다.
+3. **최적화**: 파일마다 **고정**(후보 하나) 또는 **탐색**(고른 후보 중 무엇이 좋은지 최적화가 함께 선택)을 고릅니다. 탐색은 후보 2개 이상이 필요하고, 탐색이 있으면 CMA-ES는 쓸 수 없습니다.
+
+**Resource 조합**(FMU + 원본에서 바꾼 파일들)이 다르면 다른 해석으로 보고 결과를 따로 쌓습니다. 조합은 파일 **내용**(SHA-256)으로 식별하므로, 같은 파일을 이름만 바꿔 다시 올리면 기존 후보·조합에 이어서 쌓입니다. 결과 화면에서 조합별로 거르거나(**Resource 조합** 필터) 조합끼리 비교(**Resource 조합 비교** 탭)할 수 있고, CSV에는 `variant` 열이 들어갑니다.
+
+- 원본 FMU와 압축해제 폴더는 바꾸지 않습니다. 조합마다 `data/variants/<id>/`에 실행 폴더를 만들어(원본 파일은 하드링크) 교체 파일만 복사합니다.
+- 앱은 모델이 어떤 resource를 실제로 읽는지 알 수 없습니다. 모델이 읽지 않는 파일을 바꾸면 결과는 원본과 같습니다 (예: 테스트 FMU는 `NEDC.mat`만 읽습니다).
+- 이전 버전에서 만든 `data`를 그대로 열면 기존 run은 자동으로 `원본` 조합으로 옮겨집니다.
 
 ## 목적함수 작성 규칙
 
@@ -67,6 +85,7 @@ DB에는 파라미터와 시계열(Parquet 경로)만 저장됩니다. 결과 �
 - Dymola가 만든 `modelDescription.xml`은 FMPy의 엄격 검증에 실패할 수 있어 검증을 끄고 읽습니다.
 - 일부 모델은 초기화할 때 현재 작업 디렉터리에 파일을 만들기 때문에, run마다 `data/work/<run_id>/`를 작업 디렉터리로 씁니다.
 - FMU는 내용 해시(SHA-256 앞 16자)로 식별합니다. 같은 파일을 다시 올리면 기존 FMU에 결과가 이어서 쌓입니다.
+- Dymola FMU는 `resources/` 파일을 FMU resource 위치로 읽으므로, 조합 폴더의 파일을 바꾸면 해석에 반영됩니다.
 
 ## 테스트
 
