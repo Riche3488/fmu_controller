@@ -41,7 +41,7 @@ function groupLabel(key: string, by: 'job' | 'variant', data: WorkbenchData): st
 }
 
 /** 색 필드(값 → 램프) 또는 그룹(→ 팔레트)에 따른 행 색. 색 지정이 없으면 undefined. */
-function colorFn(spec: PanelSpec, data: WorkbenchData): ((row: RunRow) => string | undefined) | undefined {
+export function colorFn(spec: PanelSpec, data: WorkbenchData): ((row: RunRow) => string | undefined) | undefined {
   const c = spec.color;
   if (isGroupRef(c)) {
     const keys = [...new Set(data.rows.map(r => groupKey(r, c.kind)))];

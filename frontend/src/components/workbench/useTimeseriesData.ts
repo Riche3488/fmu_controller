@@ -6,7 +6,7 @@ import type { Timeseries } from '../../api/types';
 const MAX_POINTS = 2000;
 
 export function useTimeseriesData(runIds: string[], vars: string[]): {
-  data: Record<string, Timeseries>; isLoading: boolean; error: Error | null;
+  byRun: Record<string, Timeseries>; isLoading: boolean; error: Error | null;
 } {
   const api = useApi();
   const results = useQueries({
@@ -17,14 +17,16 @@ export function useTimeseriesData(runIds: string[], vars: string[]): {
       enabled: vars.length > 0,
     })),
   });
-  const data: Record<string, Timeseries> = {};
+  const byRun: Record<string, Timeseries> = {};
   runIds.forEach((id, i) => {
     const d = results[i]?.data;
-    if (d) data[id] = d;
+    if (d) byRun[id] = d;
   });
   return {
-    data,
-    isLoading: vars.length > 0 && results.some(r => r.isLoading),
+    byRun,
+    // 보여 줄 데이터가 하나라도 있으면 로딩 중이어도 차트를 그대로 둔다 (선택이 바뀔 때 차트가 사라지지 않게).
+    // placeholderData(keepPreviousData)는 쓰지 않는다: 슬롯 단위라 run이 바뀌면 다른 run의 데이터가 섞여 들어온다.
+    isLoading: vars.length > 0 && results.some(r => r.isLoading) && Object.keys(byRun).length === 0,
     error: (results.find(r => r.isError)?.error as Error | undefined) ?? null,
   };
 }

@@ -10,6 +10,7 @@ import type { ChartKind, PanelSpec, WorkbenchData } from '../workbench';
 import { OPTIMIZATION_BUILDERS } from './optimization';
 import { SCALAR_BUILDERS } from './scalar';
 import { SURFACE_BUILDERS } from './surface';
+import { TIMESERIES_BUILDERS } from './timeseries';
 
 export type { WorkbenchData } from '../workbench';
 
@@ -23,6 +24,7 @@ export const CHART_BUILDERS: Partial<Record<ChartKind, ChartBuilder>> = {
   ...SCALAR_BUILDERS,
   ...SURFACE_BUILDERS,
   ...OPTIMIZATION_BUILDERS,
+  ...TIMESERIES_BUILDERS,
 };
 
 export function buildChart(spec: PanelSpec, data: WorkbenchData, selected: string[], ts?: Record<string, Timeseries>): ChartResult {
@@ -40,9 +42,11 @@ function itemRunId(item: unknown): string | undefined {
   return typeof id === 'string' ? id : typeof name === 'string' ? name : undefined;
 }
 
-/** click 이벤트 → run id */
-export function runIdFromClick(e: { data?: unknown }): string | undefined {
-  return itemRunId(e.data);
+/** click 이벤트 → run id. 항목에 id/name이 없으면 series id(`<runId>` 또는 `<runId>::접미사`, 선 그래프)를 쓴다. */
+export function runIdFromClick(e: { data?: unknown; seriesId?: unknown }): string | undefined {
+  const fromItem = itemRunId(e.data);
+  if (fromItem) return fromItem;
+  return typeof e.seriesId === 'string' ? e.seriesId.split('::')[0] : undefined;
 }
 
 type BrushEvent = { batch?: { areas?: unknown[]; selected?: { seriesIndex: number; dataIndex: number[] }[] }[] };

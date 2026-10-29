@@ -49,17 +49,17 @@ export function Panel({ spec, data, loading = false, onEdit, onRemove, onMaximiz
   const ts = useTimeseriesData(tsRunIds, isTs && !missing.length ? spec.vars ?? [] : []);
   const runIdSet = useMemo(() => new Set(data.rows.map(r => r.id)), [data.rows]);
   const result: ChartResult = useMemo(
-    () => buildChart(spec, data, selected, isTs ? ts.data : undefined),
-    // ts.data는 매 렌더 새 객체라 실제 내용(로딩 끝난 run 수)으로 비교한다
+    () => buildChart(spec, data, selected, isTs ? ts.byRun : undefined),
+    // ts.byRun은 매 렌더 새 객체라 실제 내용(로딩 끝난 run 수)으로 비교한다
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [spec, data, selected, isTs, Object.keys(ts.data).join(',')],
+    [spec, data, selected, isTs, Object.keys(ts.byRun).join(',')],
   );
 
   // echarts-for-react는 onEvents 객체가 바뀌면 차트를 다시 만든다 → 한 번만 만들고 최신 값은 ref로 읽는다
   const latest = useRef({ result, set, toggle, runIdSet });
   latest.current = { result, set, toggle, runIdSet };
   const onEvents = useMemo(() => ({
-    click: (e: { data?: unknown }) => {
+    click: (e: { data?: unknown; seriesId?: unknown }) => {
       const id = runIdFromClick(e);
       if (id && latest.current.runIdSet.has(id)) latest.current.toggle(id);
     },

@@ -13,17 +13,17 @@ const titles = () => screen.getAllByTestId('panel-title').map(t => t.textContent
 // 테스트가 바꾼 빌더를 원래 등록된 것으로 되돌린다
 const ORIGINAL = { ...CHART_BUILDERS };
 afterEach(() => {
-  for (const k of ['scatter', 'histogram'] as const) {
+  for (const k of ['scatter', 'histogram', 'fft'] as const) {
     if (ORIGINAL[k]) CHART_BUILDERS[k] = ORIGINAL[k]; else delete CHART_BUILDERS[k];
   }
 });
 
 describe('Workbench', () => {
-  test('기본 2x2 네 패널, 등록 안 된 차트는 준비 중', async () => {
+  test('기본 2x2 네 패널, 시계열 subplot은 변수 선택 안내', async () => {
     renderWith(<Workbench fmuId={MOCK_FMU_ID} filter={{}} />);
     await waitFor(() => expect(titles()).toEqual(['산점도', '평행좌표', '시계열 subplot', '상관 히트맵']));
     await waitFor(() => expect(screen.getAllByTestId('panel-empty')).toHaveLength(4));
-    expect(screen.getAllByTestId('panel-empty')[2]).toHaveTextContent('준비 중');   // 시계열 subplot만 아직 빌더가 없다
+    expect(screen.getAllByTestId('panel-empty')[2]).toHaveTextContent('변수를 선택하세요');
   });
 
   test('패널 추가 메뉴로 히스토그램 추가, 삭제', async () => {
@@ -57,6 +57,7 @@ describe('Workbench', () => {
         ],
       },
     });
+    delete CHART_BUILDERS.fft;   // 등록 안 된 차트 종류 흉내
     renderWith(<Workbench fmuId={MOCK_FMU_ID} filter={{}} />, { client });
     await waitFor(() => expect(panels()).toHaveLength(4));
     await userEvent.click(screen.getByRole('button', { name: '불러오기' }));
