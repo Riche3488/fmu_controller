@@ -1,6 +1,8 @@
 import { createContext, createElement, useContext, type ReactNode } from 'react';
 import type {
   BatchRequest,
+  CandidatePreview,
+  CandidateUpload,
   FmuSummary,
   Health,
   Job,
@@ -11,10 +13,12 @@ import type {
   OptimizationRequest,
   Page,
   RunPage,
+  ResourceFile,
   RunQuery,
   Timeseries,
   Variable,
   VariableQuery,
+  Variant,
 } from './types';
 
 export interface ApiClient {
@@ -25,6 +29,12 @@ export interface ApiClient {
   getFmu(id: string): Promise<FmuSummary>;
   deleteFmu(id: string): Promise<void>;
   listVariables(fmuId: string, q: VariableQuery): Promise<Page<Variable>>;
+
+  listResources(fmuId: string): Promise<ResourceFile[]>;
+  uploadCandidate(fmuId: string, path: string, file: File): Promise<CandidateUpload>;
+  deleteCandidate(fmuId: string, candidateId: string): Promise<void>;
+  previewCandidate(fmuId: string, candidateId: string, varName?: string): Promise<CandidatePreview>;
+  listVariants(fmuId: string): Promise<Variant[]>;
 
   listObjectives(): Promise<Objective[]>;
   getObjective(id: string): Promise<Objective>;

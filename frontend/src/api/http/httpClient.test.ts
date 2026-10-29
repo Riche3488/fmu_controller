@@ -64,4 +64,28 @@ describe('httpClient', () => {
     expect(init.method).toBe('POST');
     expect((init.body as FormData).get('file')).toBeInstanceOf(File);
   });
+
+  test('uploadCandidate posts path and file as multipart', async () => {
+    const fetchFn = mockFetch({ id: 'c1', existing: false });
+    await createHttpClient().uploadCandidate('x', 'sub/a.mat', new File(['1'], 'a.mat'));
+    const [url, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('/api/fmus/x/resources/candidates');
+    expect(init.method).toBe('POST');
+    expect((init.body as FormData).get('path')).toBe('sub/a.mat');
+    expect((init.body as FormData).get('file')).toBeInstanceOf(File);
+  });
+
+  test('resource and variant endpoints', async () => {
+    const fetchFn = mockFetch([]);
+    const c = createHttpClient();
+    await c.listResources('x');
+    await c.listVariants('x');
+    await c.previewCandidate('x', 'c1', 'table');
+    await c.listRuns({ variantIds: ['a', 'b'] });
+    expect(fetchFn.mock.calls.map(c => (c as unknown as [string])[0])).toEqual([
+      '/api/fmus/x/resources', '/api/fmus/x/variants', '/api/fmus/x/resources/candidates/c1/preview?var=table',
+      '/api/runs?variantIds=a%2Cb',
+    ]);
+  });
 });
+

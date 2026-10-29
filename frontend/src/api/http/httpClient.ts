@@ -62,6 +62,18 @@ export function createHttpClient(baseUrl = '/api'): ApiClient {
     deleteFmu: id => request('DELETE', `/fmus/${id}`),
     listVariables: (fmuId, q) => get(`/fmus/${fmuId}/variables${qs(q)}`),
 
+    listResources: fmuId => get(`/fmus/${fmuId}/resources`),
+    uploadCandidate: (fmuId, path, file) => {
+      const form = new FormData();
+      form.append('path', path);
+      form.append('file', file);
+      return request('POST', `/fmus/${fmuId}/resources/candidates`, form);
+    },
+    deleteCandidate: (fmuId, candidateId) => request('DELETE', `/fmus/${fmuId}/resources/candidates/${candidateId}`),
+    previewCandidate: (fmuId, candidateId, varName) =>
+      get(`/fmus/${fmuId}/resources/candidates/${candidateId}/preview${qs({ var: varName })}`),
+    listVariants: fmuId => get(`/fmus/${fmuId}/variants`),
+
     listObjectives: () => get('/objectives'),
     getObjective: id => get(`/objectives/${id}`),
     createObjective: input => request('POST', '/objectives', input),

@@ -1,0 +1,15 @@
+[
+ {
+  "path": "NEDC.mat",
+  "size": 2882,
+  "sha256": "4f1c0b9e2d7a6c3e8b5a19d0f2e4c6a8b1d3f5e7091a2b3c4d5e6f708192a3b4",
+  "kind": "mat"
+ },
+ {
+  "path": "tire.tir",
+  "size": 214,
+  "sha256": "9a8b7c6d5e4f30211203f4e5d6c7b8a99a8b7c6d5e4f30211203f4e5d6c7b8a9",
+  "kind": "text",
+  "text": "[MDI_HEADER]\nFILE_TYPE = 'tir'\nFILE_VERSION = 3.0\n[DIMENSION]\nUNLOADED_RADIUS = 0.3135\nWIDTH = 0.205\n[VERTICAL]\nVERTICAL_STIFFNESS = 210000\n"
+ }
+]

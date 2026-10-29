@@ -15,7 +15,7 @@ describe('composeClient', () => {
   });
 
   test('http mode without http client throws', () => {
-    const modes = { FMUS: 'mock', OBJECTIVES: 'mock', RUNS: 'mock', JOBS: 'http' } as const;
+    const modes = { FMUS: 'mock', RESOURCES: 'mock', OBJECTIVES: 'mock', RUNS: 'mock', JOBS: 'http' } as const;
     expect(() => composeClient(modes, { mock: createMockClient() })).toThrow('VITE_API_JOBS=http');
   });
 
@@ -24,4 +24,14 @@ describe('composeClient', () => {
     await composeClient({}, { mock: createMockClient(), http }).listJobs();
     expect(http.listJobs).toHaveBeenCalled();
   });
+
+  test('RESOURCES domain routes resource methods', async () => {
+    const http = { ...createMockClient(), listResources: vi.fn(async () => []), listVariants: vi.fn(async () => []) } as unknown as ApiClient;
+    const c = composeClient({ RESOURCES: 'http' }, { mock: createMockClient(), http });
+    await c.listResources('x');
+    await c.listVariants('x');
+    expect(http.listResources).toHaveBeenCalled();
+    expect(http.listVariants).toHaveBeenCalled();
+  });
 });
+

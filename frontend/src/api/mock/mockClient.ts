@@ -4,6 +4,7 @@
 import { ApiError, type ApiClient } from '../client';
 import type {
   BatchRequest,
+  CandidatePreview,
   FmuSummary,
   Job,
   JobEvent,
@@ -11,15 +12,26 @@ import type {
   ObjectiveValue,
   OptimizationRequest,
   ParamValue,
+  ResourceCandidate,
   Run,
   RunRow,
   Variable,
+  Variant,
 } from '../types';
 import fmusFixture from './fixtures/fmus.json';
+import resourcesFixture from './fixtures/resources.json';
 import variablesFixture from './fixtures/variables.json';
 import { expandValues } from '../../lib/sweep';
 
 export const MOCK_FMU_ID = (fmusFixture as FmuSummary[])[0].id;
+export const MOCK_NEDC_PATH = 'NEDC.mat';
+export const MOCK_TIR_PATH = 'tire.tir';
+
+type ResourceFixture = { path: string; size: number; sha256: string; kind: string; text?: string };
+type MockCandidate = Omit<ResourceCandidate, 'nRuns'>;
+type MockResource = { path: string; size: number; sha256: string; candidates: MockCandidate[] };
+type MockVariant = Omit<Variant, 'nRuns' | 'label'>;
+type MockCase = { params: Record<string, ParamValue>; variantId: string };
 
 const MISSING_EVALUATE = 'evaluate 함수가 정의되지 않았습니다';
 
@@ -64,14 +76,42 @@ function generateCases(req: BatchRequest): Record<string, number>[] {
   );
 }
 
-/** mock 목적함수: 코드 해시가 정하는 최적점까지의 거리 제곱합 */
-function evaluateMock(code: string, run: Run): ObjectiveValue {
+/** mock 목적함수: 코드 해시가 정하는 최적점까지의 거리 제곱합 (+ 원본이 아닌 resource 조합이면 조합별 오프셋) */
+function evaluateMock(code: string, run: Run, originalVariant: boolean): ObjectiveValue {
   if (run.status !== 'ok') return { value: null, error: '시뮬레이션 실패' };
   if (!/def\s+evaluate\s*\(/.test(code)) return { value: null, error: MISSING_EVALUATE };
   const nums = Object.values(run.params).filter((v): v is number => typeof v === 'number');
   const center = unit(code);
-  const value = nums.reduce((s, v) => s + (v - center) ** 2, 0) + unit(code + run.id) * 0.01;
+  const value = nums.reduce((s, v) => s + (v - center) ** 2, 0) + unit(code + run.id) * 0.01
+    + (originalVariant ? 0 : unit(code + run.variantId) * 0.5);
   return { value, error: null };
+}
+
+function extOf(name: string): string {
+  const i = name.lastIndexOf('.');
+  return i < 0 ? '' : name.slice(i).toLowerCase();
+}
+
+function basename(path: string): string {
+  return path.slice(path.lastIndexOf('/') + 1);
+}
+
+/** path 정렬 순 직곱 */
+function resourceCombos(sel: Record<string, string[]>): Record<string, string>[] {
+  return Object.keys(sel).sort().reduce<Record<string, string>[]>(
+    (acc, path) => acc.flatMap(c => sel[path].map(id => ({ ...c, [path]: id }))),
+    [{}],
+  );
+}
+
+/** File 내용을 텍스트로 (jsdom의 File에는 text()가 없다) */
+function readText(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
 }
 
 function now() {
@@ -82,7 +122,7 @@ type Listener = (e: JobEvent) => void;
 
 type JobState = {
   job: Job;
-  cases: Record<string, ParamValue>[];
+  cases: MockCase[];
   timer: ReturnType<typeof setInterval> | null;
   listeners: Set<Listener>;
 };
@@ -94,8 +134,79 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
   const objectives = new Map<string, Objective>();
   const jobs = new Map<string, JobState>();
   const runs = new Map<string, Run>();
+  const resources = new Map<string, MockResource[]>();
+  const contents = new Map<string, string>(); // 후보 id -> 텍스트 내용 (미리보기용)
+  const variants = new Map<string, MockVariant>();
   let seq = 0;
   const nextId = (prefix: string) => `${prefix}${(++seq).toString().padStart(6, '0')}`;
+
+  function candidateId(fmuId: string, path: string, sha: string) {
+    return mockCodeHash(`${fmuId}:${path}:${sha}`).slice(0, 16);
+  }
+
+  function initResources(fmuId: string) {
+    const list = (resourcesFixture as ResourceFixture[]).map(r => {
+      const id = candidateId(fmuId, r.path, r.sha256);
+      if (r.text) contents.set(id, r.text);
+      return {
+        path: r.path, size: r.size, sha256: r.sha256,
+        candidates: [{ id, path: r.path, name: basename(r.path), size: r.size, sha256: r.sha256, isOriginal: true, createdAt: now() }],
+      };
+    });
+    resources.set(fmuId, list);
+    ensureVariant(fmuId, {});
+  }
+
+  function getResources(fmuId: string): MockResource[] {
+    if (!fmus.has(fmuId)) throw new ApiError('FMU를 찾을 수 없습니다', 404);
+    return resources.get(fmuId)!;
+  }
+
+  function findCandidate(fmuId: string, id: string): MockCandidate | null {
+    for (const r of resources.get(fmuId) ?? []) {
+      const c = r.candidates.find(x => x.id === id);
+      if (c) return c;
+    }
+    return null;
+  }
+
+  /** assignment(path -> 후보 id)에서 원본을 뺀 조합의 variant를 찾거나 만든다 */
+  function ensureVariant(fmuId: string, assignment: Record<string, string>): string {
+    const replaced: Record<string, string> = {};
+    const pairs: string[] = [];
+    for (const path of Object.keys(assignment).sort()) {
+      const c = findCandidate(fmuId, assignment[path]);
+      if (!c || c.path !== path) throw new ApiError(`${path}의 후보가 아닙니다: ${assignment[path]}`, 422);
+      if (c.isOriginal) continue;
+      replaced[path] = c.id;
+      pairs.push(`\n${path}=${c.sha256}`);
+    }
+    const id = mockCodeHash(fmuId + pairs.join('')).slice(0, 16);
+    if (!variants.has(id)) variants.set(id, { id, fmuId, assignment: replaced, isOriginal: pairs.length === 0 });
+    return id;
+  }
+
+  function variantLabel(v: MockVariant): string {
+    if (v.isOriginal) return '원본';
+    return Object.keys(v.assignment).sort()
+      .map(path => `${basename(path)}=${findCandidate(v.fmuId, v.assignment[path])?.name ?? '?'}`).join(', ');
+  }
+
+  function variantRuns(id: string): number {
+    return [...runs.values()].filter(r => r.variantId === id).length;
+  }
+
+  function candidateRuns(fmuId: string, c: MockCandidate): number {
+    return [...variants.values()]
+      .filter(v => v.fmuId === fmuId && (c.isOriginal ? !(c.path in v.assignment) : v.assignment[c.path] === c.id))
+      .reduce((n, v) => n + variantRuns(v.id), 0);
+  }
+
+  function isOriginalVariant(id: string) {
+    return variants.get(id)?.isOriginal ?? true;
+  }
+
+  for (const id of fmus.keys()) initResources(id);
 
   function emit(st: JobState, e: JobEvent) {
     st.listeners.forEach(l => l(e));
@@ -108,19 +219,19 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
     emit(st, { type: 'end', job: st.job });
   }
 
-  function startJob(job: Job, cases: Record<string, ParamValue>[]): Job {
+  function startJob(job: Job, cases: MockCase[]): Job {
     const st: JobState = { job, cases, timer: null, listeners: new Set() };
     jobs.set(job.id, st);
     st.timer = setInterval(() => {
       if (st.job.status === 'queued') st.job = { ...st.job, status: 'running' };
       const index = st.job.completed + st.job.failed;
       if (index >= st.cases.length) return finish(st, 'done');
-      const params = st.cases[index];
+      const { params, variantId } = st.cases[index];
       const failed = unit(`${job.id}:${index}`) < 0.05;
       const run: Run = {
         id: nextId('run'), jobId: job.id, fmuId: job.fmuId, index, params,
         status: failed ? 'failed' : 'ok', error: failed ? 'CVode: convergence test failed' : null,
-        elapsedSec: 3 + unit(`e${index}`) * 4,
+        elapsedSec: 3 + unit(`e${index}`) * 4, variantId,
       };
       runs.set(run.id, run);
       const fmu = fmus.get(job.fmuId);
@@ -156,7 +267,7 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
 
   return {
     async health() {
-      return { status: 'ok', parallelBackend: 'ray' };
+      return { status: 'ok', parallelBackend: 'ray', gpAvailable: false };
     },
 
     async listFmus() {
@@ -167,6 +278,7 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
       if (!fmus.has(id)) {
         const base = (fmusFixture as FmuSummary[])[0];
         fmus.set(id, { ...base, id, fileName: file.name, uploadedAt: now(), nRuns: 0 });
+        initResources(id);
       }
       return { ...fmus.get(id)! };
     },
@@ -180,6 +292,8 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
         throw new ApiError('이 FMU에 저장된 해석 결과가 있어 삭제할 수 없습니다', 409);
       }
       fmus.delete(id);
+      resources.delete(id);
+      for (const v of [...variants.values()]) if (v.fmuId === id) variants.delete(v.id);
     },
     async listVariables(fmuId, { q = '', causality, offset = 0, limit = 100 }) {
       if (!fmus.has(fmuId)) throw new ApiError('FMU를 찾을 수 없습니다', 404);
@@ -188,6 +302,56 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
         (!causality || causality === 'all' || v.causality === causality) &&
         (!needle || v.name.toLowerCase().includes(needle) || (v.description ?? '').toLowerCase().includes(needle)));
       return { total: matched.length, items: matched.slice(offset, offset + limit) };
+    },
+
+    async listResources(fmuId) {
+      return getResources(fmuId).map(r => ({
+        path: r.path, size: r.size, sha256: r.sha256,
+        candidates: r.candidates.map(c => ({ ...c, nRuns: candidateRuns(fmuId, c) })),
+      }));
+    },
+    async uploadCandidate(fmuId, path, file) {
+      const res = getResources(fmuId).find(r => r.path === path);
+      if (!res) throw new ApiError(`resource 파일이 없습니다: ${path}`, 404);
+      const ext = extOf(path);
+      if (extOf(file.name) !== ext) throw new ApiError(`원본과 같은 확장자(${ext})의 파일만 올릴 수 있습니다`, 400);
+      const text = await readText(file);
+      const sha = mockCodeHash(text) + mockCodeHash('x' + text);
+      const found = res.candidates.find(c => c.sha256 === sha);
+      if (found) return { ...found, nRuns: candidateRuns(fmuId, found), existing: true };
+      const c = { id: candidateId(fmuId, path, sha), path, name: file.name, size: file.size, sha256: sha, isOriginal: false, createdAt: now() };
+      res.candidates.push(c);
+      contents.set(c.id, text);
+      return { ...c, nRuns: 0, existing: false };
+    },
+    async deleteCandidate(fmuId, candidateId) {
+      getResources(fmuId);
+      const c = findCandidate(fmuId, candidateId);
+      if (!c) throw new ApiError('후보를 찾을 수 없습니다', 404);
+      if (c.isOriginal) throw new ApiError('원본 파일은 삭제할 수 없습니다', 400);
+      if (candidateRuns(fmuId, c)) throw new ApiError('이 후보로 해석한 결과가 있어 삭제할 수 없습니다', 409);
+      const res = getResources(fmuId).find(r => r.path === c.path)!;
+      res.candidates = res.candidates.filter(x => x.id !== candidateId);
+      for (const v of [...variants.values()]) if (v.assignment[c.path] === candidateId) variants.delete(v.id);
+    },
+    async previewCandidate(fmuId, candidateId, varName): Promise<CandidatePreview> {
+      getResources(fmuId);
+      const c = findCandidate(fmuId, candidateId);
+      if (!c) throw new ApiError('후보를 찾을 수 없습니다', 404);
+      if (extOf(c.path) === '.mat') {
+        const variables = [{ name: 'table', shape: [119, 3], dtype: 'float64' }];
+        const rows = Array.from({ length: 20 }, (_, i) => [i * 60, 10 + 40 * unit(`${c.id}:${i}`), i % 2]);
+        return { kind: 'mat', variables, plot: varName ? { name: varName, rows } : null };
+      }
+      const text = contents.get(c.id);
+      return text === undefined
+        ? { kind: 'binary', note: '미리보기를 지원하지 않는 바이너리 파일입니다' }
+        : { kind: 'text', text, truncated: false };
+    },
+    async listVariants(fmuId) {
+      getResources(fmuId);
+      return [...variants.values()].filter(v => v.fmuId === fmuId)
+        .map(v => ({ ...v, label: variantLabel(v), nRuns: variantRuns(v.id) }));
     },
 
     async listObjectives() {
@@ -220,11 +384,16 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
     async testObjective({ code, runId }) {
       const run = runs.get(runId);
       if (!run) throw new ApiError('run을 찾을 수 없습니다', 404);
-      return { ...evaluateMock(code, run), stdout: '', durationMs: 12 };
+      return { ...evaluateMock(code, run, isOriginalVariant(run.variantId)), stdout: '', durationMs: 12 };
     },
 
     async createBatch(req) {
-      const cases = generateCases(req).map(c => ({ ...req.fixedParams, ...c }));
+      const sel = req.resources ?? {};
+      getResources(req.fmuId);
+      if (Object.values(sel).some(ids => ids.length === 0)) throw new ApiError('resource 후보를 하나 이상 고르세요', 422);
+      const variantIds = resourceCombos(sel).map(a => ensureVariant(req.fmuId, a));
+      const cases = generateCases(req)
+        .flatMap(c => variantIds.map(variantId => ({ params: { ...req.fixedParams, ...c }, variantId })));
       return { ...startJob(newJob('batch', req, cases.length), cases) };
     },
     async createOptimization(req) {
@@ -232,17 +401,32 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
       if (req.algorithm === 'cmaes' && req.objectives.length > 1) {
         throw new ApiError('CMA-ES는 단일 목적만 지원합니다', 422);
       }
+      if (req.algorithm === 'gp') throw new ApiError('GP를 쓰려면 torch를 설치하세요 (pip install -e "backend[gp]")', 422);
+      const res = req.resources ?? {};
+      const searchCounts = Object.values(res).flatMap(r => (r.mode === 'search' ? [r.candidateIds.length] : []));
+      if (searchCounts.some(n => n < 2)) throw new ApiError('탐색할 후보를 2개 이상 고르세요', 422);
+      if (req.algorithm === 'cmaes' && searchCounts.length) {
+        throw new ApiError('CMA-ES는 파일 탐색(선택형 변수)을 지원하지 않습니다', 422);
+      }
+      getResources(req.fmuId);
       const job = newJob('optimization', req, req.nTrials);
       job.objectiveSnapshot = Object.fromEntries(req.objectives.map(o => {
         const obj = getObj(o.objectiveId);
         return [obj.id, { name: obj.name, codeHash: obj.codeHash }];
       }));
+      const pick = (path: string, i: number) => {
+        const r = res[path];
+        return r.mode === 'fixed' ? r.candidateId : r.candidateIds[Math.floor(unit(`${job.id}:${path}:${i}`) * r.candidateIds.length)];
+      };
       const cases = Array.from({ length: req.nTrials }, (_, i) => ({
-        ...req.fixedParams,
-        ...Object.fromEntries(req.designVars.map(d => {
-          const v = d.min + (d.max - d.min) * unit(`${job.id}:${d.name}:${i}`);
-          return [d.name, d.kind === 'int' ? Math.round(v) : v];
-        })),
+        params: {
+          ...req.fixedParams,
+          ...Object.fromEntries(req.designVars.map(d => {
+            const v = d.min + (d.max - d.min) * unit(`${job.id}:${d.name}:${i}`);
+            return [d.name, d.kind === 'int' ? Math.round(v) : v];
+          })),
+        },
+        variantId: ensureVariant(req.fmuId, Object.fromEntries(Object.keys(res).map(path => [path, pick(path, i)]))),
       }));
       return { ...startJob(job, cases) };
     },
@@ -273,12 +457,13 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
       const rows = [...runs.values()].filter(r =>
         (!q.fmuId || r.fmuId === q.fmuId) &&
         (!q.jobIds?.length || q.jobIds.includes(r.jobId)) &&
-        (!q.status || r.status === q.status));
+        (!q.status || r.status === q.status) &&
+        (!q.variantIds?.length || q.variantIds.includes(r.variantId)));
       const objIds = q.objectiveIds ?? [];
       const objs = objIds.map(getObj);
       let out: RunRow[] = rows.map(r => ({
         ...r,
-        objectives: Object.fromEntries(objs.map(o => [o.id, evaluateMock(o.code, r)])),
+        objectives: Object.fromEntries(objs.map(o => [o.id, evaluateMock(o.code, r, isOriginalVariant(r.variantId))])),
       }));
       const dir = q.sortDir === 'desc' ? -1 : 1;
       const sortBy = q.sortBy ?? 'index';
@@ -313,7 +498,8 @@ export function createMockClient(opts: { tickMs?: number } = {}): ApiClient {
       const { startTime, stopTime, outputInterval } = cfg.sim;
       const n = Math.min(maxPoints, Math.floor((stopTime - startTime) / outputInterval) + 1);
       const time = Array.from({ length: n }, (_, i) => startTime + ((stopTime - startTime) * i) / Math.max(n - 1, 1));
-      const gain = 1 + Object.values(run.params).reduce<number>((s, v) => s + (typeof v === 'number' ? v : 0), 0) * 0.1;
+      const gain = (1 + Object.values(run.params).reduce<number>((s, v) => s + (typeof v === 'number' ? v : 0), 0) * 0.1)
+        * (isOriginalVariant(run.variantId) ? 1 : 0.7 + unit(run.variantId) * 0.6);
       const series = Object.fromEntries(vars.map(name => {
         const f = 0.01 + unit(name) * 0.05;
         const phase = unit(name + 'p') * Math.PI;

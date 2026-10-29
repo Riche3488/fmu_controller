@@ -56,12 +56,15 @@ export type BatchRequest = {
   recordVariables: string[];
   workers: number;
   runTimeoutSec: number;
+  /** resource path -> 후보 id 목록 (생략 = 원본) */
+  resources?: Record<string, string[]>;
 };
 
 export type DesignVar = { name: string; min: number; max: number; kind: 'float' | 'int' };
 export type Direction = 'minimize' | 'maximize';
 export type OptObjective = { objectiveId: string; direction: Direction };
-export type Algorithm = 'tpe' | 'cmaes' | 'random' | 'nsga2';
+export type Algorithm = 'tpe' | 'gp' | 'cmaes' | 'random' | 'nsga2';
+export type OptResource = { mode: 'fixed'; candidateId: string } | { mode: 'search'; candidateIds: string[] };
 
 export type OptimizationRequest = {
   name: string;
@@ -75,6 +78,7 @@ export type OptimizationRequest = {
   recordVariables: string[];
   workers: number;
   runTimeoutSec: number;
+  resources?: Record<string, OptResource>;
 };
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'failed' | 'cancelled';
@@ -107,6 +111,7 @@ export type Run = {
   status: 'ok' | 'failed';
   error: string | null;
   elapsedSec: number;
+  variantId: string;
 };
 
 export type JobEvent =
@@ -126,6 +131,7 @@ export type RunQuery = {
   jobIds?: string[];
   status?: 'ok' | 'failed';
   objectiveIds?: string[];
+  variantIds?: string[];
   sortBy?: SortBy;
   sortDir?: 'asc' | 'desc';
   offset?: number;
@@ -137,4 +143,20 @@ export type RunPage = Page<RunRow> & { codeHashes: Record<string, string> };
 
 export type Timeseries = { time: number[]; series: Record<string, number[]> };
 
-export type Health = { status: string; parallelBackend: 'ray' | 'pool' };
+export type Health = { status: string; parallelBackend: 'ray' | 'pool'; gpAvailable: boolean };
+
+export type ResourceCandidate = {
+  id: string; path: string; name: string; size: number; sha256: string; isOriginal: boolean; nRuns: number; createdAt: string;
+};
+/** candidates[0]은 원본 */
+export type ResourceFile = { path: string; size: number; sha256: string; candidates: ResourceCandidate[] };
+export type CandidateUpload = ResourceCandidate & { existing: boolean };
+export type MatVariable = { name: string; shape: number[]; dtype: string };
+export type CandidatePreview =
+  | { kind: 'text'; text: string; truncated: boolean }
+  | { kind: 'mat'; variables: MatVariable[]; plot: { name: string; rows: number[][] } | null }
+  | { kind: 'binary'; note: string };
+/** Resource 조합: FMU + 원본이 아닌 후보로 바꾼 파일들 (assignment: path -> 후보 id) */
+export type Variant = {
+  id: string; fmuId: string; label: string; assignment: Record<string, string>; isOriginal: boolean; nRuns: number;
+};

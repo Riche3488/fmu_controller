@@ -3,12 +3,13 @@ import type { ApiClient } from './client';
 import { createHttpClient } from './http/httpClient';
 import { createMockClient } from './mock/mockClient';
 
-export type Domain = 'FMUS' | 'OBJECTIVES' | 'JOBS' | 'RUNS';
+export type Domain = 'FMUS' | 'RESOURCES' | 'OBJECTIVES' | 'JOBS' | 'RUNS';
 
 type Method = keyof ApiClient;
 
 const DOMAIN_METHODS: Record<Domain, Method[]> = {
   FMUS: ['health', 'listFmus', 'uploadFmu', 'getFmu', 'deleteFmu', 'listVariables'],
+  RESOURCES: ['listResources', 'uploadCandidate', 'deleteCandidate', 'previewCandidate', 'listVariants'],
   OBJECTIVES: ['listObjectives', 'getObjective', 'createObjective', 'updateObjective', 'deleteObjective', 'testObjective'],
   JOBS: ['createBatch', 'createOptimization', 'listJobs', 'getJob', 'cancelJob', 'subscribeJob'],
   RUNS: ['listRuns', 'getTimeseries'],
