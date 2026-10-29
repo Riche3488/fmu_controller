@@ -189,3 +189,55 @@ class OptimizationRequest(RunSettingsBase):
     objectives: list[OptObjective] = Field(min_length=1)
     algorithm: Literal["tpe", "cmaes", "random", "nsga2"]
     n_trials: int = Field(ge=1)
+
+
+class ResourceCandidateOut(CamelModel):
+    id: str
+    path: str
+    name: str
+    size: int
+    sha256: str
+    is_original: bool
+    n_runs: int
+    created_at: datetime
+
+
+class ResourceFileOut(CamelModel):
+    path: str
+    size: int
+    sha256: str
+    candidates: list[ResourceCandidateOut]  # [0]은 원본
+
+
+class CandidateUploadOut(ResourceCandidateOut):
+    existing: bool
+
+
+class MatVariable(CamelModel):
+    name: str
+    shape: list[int]
+    dtype: str
+
+
+class MatPlot(CamelModel):
+    name: str
+    rows: list[list[float | None]]
+
+
+class CandidatePreviewOut(CamelModel):
+    """kind별로 필요한 필드만 채운다 (응답에서 None 필드는 뺀다)"""
+    kind: Literal["text", "mat", "binary"]
+    text: str | None = None
+    truncated: bool | None = None
+    variables: list[MatVariable] | None = None
+    plot: MatPlot | None = None
+    note: str | None = None
+
+
+class VariantOut(CamelModel):
+    id: str
+    fmu_id: str
+    label: str
+    assignment: dict[str, str]
+    is_original: bool
+    n_runs: int

@@ -1,12 +1,16 @@
 """resource 파일 색인과 후보 파일 관리. 후보는 (fmu_id, path, 내용 sha256)으로 식별한다."""
 import hashlib
-from pathlib import Path
+import os
+import shutil
+import tempfile
+from pathlib import Path, PurePosixPath
+from typing import BinaryIO
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..config import Settings
-from ..models import ResourceCandidate, ResourceFile
+from ..models import ResourceCandidate, ResourceFile, Run, Variant
 from . import variants
 
 CHUNK = 1 << 20
@@ -51,3 +55,104 @@ def candidate_path(settings: Settings, cand: ResourceCandidate) -> Path:
 
         return get_extract_dir(settings, cand.fmu_id) / "resources" / Path(*cand.path.split("/"))
     return settings.data_dir / "resources" / cand.fmu_id / cand.sha256
+
+
+class CandidateInUse(RuntimeError):
+    pass
+
+
+class OriginalCandidate(ValueError):
+    pass
+
+
+class UnknownResource(LookupError):
+    pass
+
+
+EXTENSION_ERROR = "원본과 같은 확장자({ext})의 파일만 올릴 수 있습니다"
+ORIGINAL_DELETE_ERROR = "원본 파일은 삭제할 수 없습니다"
+IN_USE_ERROR = "이 후보로 해석한 결과가 있어 삭제할 수 없습니다"
+
+
+def _ext(name: str) -> str:
+    return PurePosixPath(name).suffix.lower()
+
+
+def run_counts(session: Session, fmu_id: str) -> dict[str, int]:
+    """variant_id -> run 수"""
+    rows = session.execute(select(Run.variant_id, func.count()).where(Run.fmu_id == fmu_id).group_by(Run.variant_id))
+    return {vid: n for vid, n in rows if vid}
+
+
+def candidate_runs(cand: ResourceCandidate, fmu_variants: list[Variant], counts: dict[str, int]) -> int:
+    """그 후보를 쓰는 variant들의 run 수 합 (원본 후보는 그 path를 바꾸지 않은 variant)"""
+    return sum(counts.get(v.id, 0) for v in fmu_variants
+               if (cand.path not in v.assignment if cand.is_original else v.assignment.get(cand.path) == cand.id))
+
+
+def list_resources(session: Session, fmu_id: str) -> list[tuple[ResourceFile, list[ResourceCandidate]]]:
+    files = session.scalars(select(ResourceFile).where(ResourceFile.fmu_id == fmu_id).order_by(ResourceFile.path)).all()
+    cands = session.scalars(select(ResourceCandidate).where(ResourceCandidate.fmu_id == fmu_id)
+                            .order_by(ResourceCandidate.is_original.desc(), ResourceCandidate.created_at)).all()
+    by_path: dict[str, list[ResourceCandidate]] = {}
+    for c in cands:
+        by_path.setdefault(c.path, []).append(c)
+    return [(f, by_path.get(f.path, [])) for f in files]
+
+
+def add_candidate(session: Session, settings: Settings, fmu_id: str, path: str, src: BinaryIO,
+                  name: str) -> tuple[ResourceCandidate, bool]:
+    """후보 업로드. 반환: (후보, 이미 있었는지). 같은 내용(원본 포함)이면 기존 후보를 돌려준다."""
+    rf = session.get(ResourceFile, (fmu_id, path))
+    if not rf:
+        raise UnknownResource(path)
+    ext = _ext(path)
+    if _ext(name) != ext:
+        raise ValueError(EXTENSION_ERROR.format(ext=ext or "없음"))
+    store = settings.data_dir / "resources" / fmu_id
+    store.mkdir(parents=True, exist_ok=True)
+    h = hashlib.sha256()
+    size = 0
+    with tempfile.NamedTemporaryFile(dir=store, suffix=".upload", delete=False) as tmp:
+        while chunk := src.read(CHUNK):
+            h.update(chunk)
+            size += len(chunk)
+            tmp.write(chunk)
+    tmp_path = Path(tmp.name)
+    try:
+        sha = h.hexdigest()
+        existing = session.scalar(select(ResourceCandidate).where(
+            ResourceCandidate.fmu_id == fmu_id, ResourceCandidate.path == path, ResourceCandidate.sha256 == sha))
+        if existing:
+            return existing, True
+        dest = store / sha
+        if not dest.exists():
+            os.replace(tmp_path, dest)
+        cand = ResourceCandidate(id=candidate_id(fmu_id, path, sha), fmu_id=fmu_id, path=path, name=name,
+                                 sha256=sha, size=size, is_original=False)
+        session.add(cand)
+        session.commit()
+        return cand, False
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+def delete_candidate(session: Session, settings: Settings, fmu_id: str, cand: ResourceCandidate) -> None:
+    if cand.is_original:
+        raise OriginalCandidate(ORIGINAL_DELETE_ERROR)
+    fmu_variants = list(session.scalars(select(Variant).where(Variant.fmu_id == fmu_id)))
+    counts = run_counts(session, fmu_id)
+    if candidate_runs(cand, fmu_variants, counts):
+        raise CandidateInUse(IN_USE_ERROR)
+    unused = [v for v in fmu_variants if v.assignment.get(cand.path) == cand.id]
+    for v in unused:
+        session.delete(v)
+    session.delete(cand)
+    session.commit()
+    for v in unused:
+        shutil.rmtree(settings.data_dir / "variants" / v.id, ignore_errors=True)
+    # 같은 내용의 파일을 다른 path 후보가 공유할 수 있다
+    shared = session.scalar(select(func.count()).select_from(ResourceCandidate).where(
+        ResourceCandidate.fmu_id == fmu_id, ResourceCandidate.sha256 == cand.sha256, ResourceCandidate.is_original.is_(False)))
+    if not shared:
+        (settings.data_dir / "resources" / fmu_id / cand.sha256).unlink(missing_ok=True)

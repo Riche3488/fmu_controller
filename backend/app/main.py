@@ -15,7 +15,7 @@ from .parallel.base import create_executors
 from .jobs.runner import JobManager, mark_interrupted_jobs
 from .objectives.evaluator import Evaluator
 from .resources.migrate import migrate
-from .routers import fmus, jobs, objectives, runs
+from .routers import fmus, jobs, objectives, resources, runs
 from .schemas import Health
 
 
@@ -49,6 +49,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="FMU Controller", lifespan=lifespan)
     add_local_only_guards(app, settings.allowed_hosts)
     app.include_router(fmus.router)
+    app.include_router(resources.router)
     app.include_router(runs.router)
     app.include_router(objectives.router)
     app.include_router(jobs.router)
