@@ -34,11 +34,14 @@ export function usePresetEditor<K extends PresetKind, F>(opts: {
   ready: boolean;
   toConfig: (f: F) => PresetConfigs[K];
   fromConfig: (cfg: PresetConfigs[K]) => { form: F; warnings: string[] };
-  jobToConfig: (job: Job) => PresetConfigs[K];
+  /** 없으면 잡 설정 불러오기를 감춘다 */
+  jobToConfig?: (job: Job) => PresetConfigs[K];
   defaultForm: () => F;
   setForm: (f: F) => void;
   name: string;
   setName: (name: string) => void;
+  menuLabel?: string;
+  sticky?: boolean;
 }): { menuBar: ReactNode; notice: ReactNode; modals: ReactNode } {
   const { kind, fmuId, form, ready, toConfig } = opts;
   const api = useApi();
@@ -67,7 +70,10 @@ export function usePresetEditor<K extends PresetKind, F>(opts: {
     if (preset) opts.setName(`${preset.name} ${nowStamp()}`);
   };
   const loadPreset = (p: PresetOf<K>) => loadConfig(p.config, `프리셋 '${p.name}'을(를) 불러왔습니다`, p);
-  const loadJob = (j: Job) => loadConfig(opts.jobToConfig(j), `잡 '${j.name}'의 설정을 불러왔습니다`, null);
+  const jobToConfig = opts.jobToConfig;
+  const loadJob = jobToConfig
+    ? (j: Job) => loadConfig(jobToConfig(j), `잡 '${j.name}'의 설정을 불러왔습니다`, null)
+    : undefined;
 
   const newForm = () => {
     if (!form) return;
@@ -89,7 +95,7 @@ export function usePresetEditor<K extends PresetKind, F>(opts: {
   // ?preset=<id> 또는 ?fromJob=<id>로 들어오면 한 번 불러온다 (프리셋 관리·잡 모니터에서 연결)
   const presetParam = searchParams.get('preset');
   const jobParam = searchParams.get('fromJob');
-  const fromJob = useQuery({ queryKey: ['job', jobParam], queryFn: () => api.getJob(jobParam!), enabled: !!jobParam });
+  const fromJob = useQuery({ queryKey: ['job', jobParam], queryFn: () => api.getJob(jobParam!), enabled: !!jobParam && !!loadJob });
   const initialLoaded = useRef(false);
   useEffect(() => {
     if (initialLoaded.current || !ready) return;
@@ -97,7 +103,7 @@ export function usePresetEditor<K extends PresetKind, F>(opts: {
       if (!presets.isFetched) return;
       const p = presets.data?.find(x => x.id === presetParam);
       if (p) loadPreset(p as PresetOf<K>);
-    } else if (jobParam) {
+    } else if (jobParam && loadJob) {
       if (!fromJob.isFetched) return;
       if (fromJob.data?.kind === kind) loadJob(fromJob.data);
     }
@@ -148,7 +154,8 @@ export function usePresetEditor<K extends PresetKind, F>(opts: {
   const menuBar = (
     <PresetMenuBar kind={kind} fmuId={fmuId} current={current as Preset | null} dirty={dirty} onNew={newForm} onSave={save}
       onSaveAs={() => setModal('saveAs')} onRename={() => setModal('rename')} onDelete={() => setModal('delete')}
-      onLoadPreset={p => loadPreset(p as PresetOf<K>)} onLoadJob={loadJob} />
+      onLoadPreset={p => loadPreset(p as PresetOf<K>)} onLoadJob={loadJob}
+      menuLabel={opts.menuLabel} sticky={opts.sticky} />
   );
 
   const noticeEl = notice && (

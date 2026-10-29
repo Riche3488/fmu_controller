@@ -85,7 +85,9 @@ function PresetItem({ preset, onClick, other }: { preset: Preset; onClick: () =>
   );
 }
 
-export function PresetMenuBar({ kind, fmuId, current, dirty, onNew, onSave, onSaveAs, onRename, onDelete, onLoadPreset, onLoadJob }: {
+export function PresetMenuBar({
+  kind, fmuId, current, dirty, onNew, onSave, onSaveAs, onRename, onDelete, onLoadPreset, onLoadJob, menuLabel = '프리셋', sticky = true,
+}: {
   kind: PresetKind;
   fmuId: string;
   current: Preset | null;
@@ -96,22 +98,27 @@ export function PresetMenuBar({ kind, fmuId, current, dirty, onNew, onSave, onSa
   onRename: () => void;
   onDelete: () => void;
   onLoadPreset: (p: Preset) => void;
-  onLoadJob: (j: Job) => void;
+  /** 없으면 '최근 잡의 설정' 목록을 감춘다 (대시보드 등 잡과 무관한 프리셋) */
+  onLoadJob?: (j: Job) => void;
+  menuLabel?: string;
+  /** 설정 화면 상단에 붙는 메뉴 바. 작업대처럼 다른 화면 안에 넣을 때는 false */
+  sticky?: boolean;
 }) {
   const api = useApi();
   const presets = usePresets(kind);
-  const jobs = useQuery({ queryKey: ['jobs', fmuId], queryFn: () => api.listJobs({ fmuId }) });
+  const jobs = useQuery({ queryKey: ['jobs', fmuId], queryFn: () => api.listJobs({ fmuId }), enabled: !!onLoadJob });
   const list = presets.data ?? [];
   const mine = list.filter(p => p.sourceFmuId === fmuId);
   const others = list.filter(p => p.sourceFmuId !== fmuId);
   const recent = (jobs.data ?? []).filter(j => j.kind === kind).slice(0, MAX_RECENT_JOBS);
 
   return (
-    <Paper withBorder px="xs" py={4} pos="sticky" top="calc(var(--app-shell-header-height) + 4px)" style={{ zIndex: 5 }} data-testid="preset-menubar">
+    <Paper withBorder px="xs" py={4} data-testid="preset-menubar"
+      {...(sticky ? { pos: 'sticky' as const, top: 'calc(var(--app-shell-header-height) + 4px)', style: { zIndex: 5 } } : {})}>
       <Group justify="space-between" wrap="nowrap">
         <Group gap={2}>
           <Menu position="bottom-start" shadow="md" width={260} {...NO_TRANSITION}>
-            <Menu.Target><Button variant="subtle" size="compact-sm">프리셋</Button></Menu.Target>
+            <Menu.Target><Button variant="subtle" size="compact-sm">{menuLabel}</Button></Menu.Target>
             <Menu.Dropdown>
               <Menu.Item onClick={onNew}>새 설정</Menu.Item>
               <Menu.Divider />
@@ -136,19 +143,25 @@ export function PresetMenuBar({ kind, fmuId, current, dirty, onNew, onSave, onSa
               {others.length > 0 && (
                 <>
                   <Menu.Divider />
-                  <Menu.Label>다른 FMU의 프리셋 (없는 변수·후보는 빠집니다)</Menu.Label>
+                  <Menu.Label>{kind === 'dashboard'
+                    ? '다른 FMU의 프리셋 (없는 변수·목적함수를 쓰는 패널은 "찾을 수 없음")'
+                    : '다른 FMU의 프리셋 (없는 변수·후보는 빠집니다)'}</Menu.Label>
                   {others.map(p => <PresetItem key={p.id} preset={p} other onClick={() => onLoadPreset(p)} />)}
                 </>
               )}
-              <Menu.Divider />
-              <Menu.Label>최근 {kind === 'batch' ? '배치' : '최적화'} 잡의 설정</Menu.Label>
-              {recent.length === 0 && <Text size="xs" c="dimmed" px="sm" pb={4}>없음</Text>}
-              {recent.map(j => (
-                <Menu.Item key={j.id} onClick={() => onLoadJob(j)}>
-                  <Text size="sm">{j.name}</Text>
-                  <Text size="xs" c="dimmed">{jobSummary(j)} · {fmtTime(j.createdAt)}</Text>
-                </Menu.Item>
-              ))}
+              {onLoadJob && (
+                <>
+                  <Menu.Divider />
+                  <Menu.Label>최근 {kind === 'batch' ? '배치' : '최적화'} 잡의 설정</Menu.Label>
+                  {recent.length === 0 && <Text size="xs" c="dimmed" px="sm" pb={4}>없음</Text>}
+                  {recent.map(j => (
+                    <Menu.Item key={j.id} onClick={() => onLoadJob(j)}>
+                      <Text size="sm">{j.name}</Text>
+                      <Text size="xs" c="dimmed">{jobSummary(j)} · {fmtTime(j.createdAt)}</Text>
+                    </Menu.Item>
+                  ))}
+                </>
+              )}
             </Menu.Dropdown>
           </Menu>
         </Group>
