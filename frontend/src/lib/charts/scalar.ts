@@ -246,19 +246,21 @@ export const boxViolin: ChartBuilder = (spec, data) => {
   if (!groups.length) return NO_VALUE;
   const series: Opt[] = [];
   if (spec.violin) {
-    // 항목 = [범주 인덱스, [[값, 정규화 밀도], ...]]
-    const polys = groups.map((g, i) => {
+    // ECharts는 data 차원을 숫자로만 다루므로 data에는 [범주 인덱스, 최소, 최대]만 두고 곡선은 클로저에 보관한다
+    const curves: number[][][] = [];
+    const extents = groups.map((g, i) => {
       const [lo, hi] = [minOf(g.values), maxOf(g.values)];
       const at = Array.from({ length: VIOLIN_POINTS }, (_, t) => (hi === lo ? lo : lo + ((hi - lo) * t) / (VIOLIN_POINTS - 1)));
       const d = kde(g.values, at);
       const dmax = maxOf(d) || 1;
-      return [i, at.map((yy, t) => [yy, d[t] / dmax])];
+      curves.push(at.map((yy, t) => [yy, d[t] / dmax]));
+      return [i, lo, hi];
     });
     series.push({
-      type: 'custom', name: '분포', data: polys, z: 1, silent: true,
-      renderItem: (_: unknown, api: CustomApi) => {
+      type: 'custom', name: '분포', data: extents, encode: { x: 0, y: [1, 2] }, z: 1, silent: true,
+      renderItem: (params: { dataIndex: number }, api: CustomApi) => {
         const i = api.value(0) as number;
-        const pts = api.value(1) as number[][];
+        const pts = curves[params.dataIndex];
         const half = api.size([1, 0])[0] * 0.4;
         const c = api.coord([i, 0])[0];
         const left = pts.map(([yy, d]) => [c - d * half, api.coord([i, yy])[1]]);
@@ -351,13 +353,13 @@ export const bar: ChartBuilder = (spec, data) => {
     series: [
       { type: 'bar', name: '평균', data: stats.map(s => s.mean) },
       {
-        // 항목 = [범주 인덱스, 표준편차, 평균]: 평균 ± 표준편차를 세로선+캡으로 그린다
-        type: 'custom', name: '±표준편차', z: 3, silent: true,
-        data: stats.map((s, i) => [i, s.std, s.mean]),
+        // 항목 = [범주 인덱스, 평균-표준편차, 평균+표준편차]: 세로선+캡으로 그리고 y 범위에 반영한다
+        type: 'custom', name: '±표준편차', z: 3, silent: true, encode: { x: 0, y: [1, 2] },
+        data: stats.map((s, i) => [i, s.mean - s.std, s.mean + s.std]),
         renderItem: (_: unknown, api: CustomApi) => {
-          const i = api.value(0) as number, std = api.value(1) as number, mean = api.value(2) as number;
-          const [x, top] = api.coord([i, mean + std]);
-          const bottom = api.coord([i, mean - std])[1];
+          const i = api.value(0) as number, lo = api.value(1) as number, hi = api.value(2) as number;
+          const [x, top] = api.coord([i, hi]);
+          const bottom = api.coord([i, lo])[1];
           const cap = Math.min(api.size([1, 0])[0] * 0.15, 12);
           const style = { stroke: '#333', lineWidth: 1.5 };
           return {

@@ -27,6 +27,17 @@ const spec = (chart: PanelSpec['chart'], over: Partial<PanelSpec> = {}): PanelSp
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type O = any;
 const opt = (r: unknown): O => { expect(isEmptyChart(r as never)).toBe(false); return r; };
+// renderItem 호출용 가짜 api: value(dim)은 data의 숫자 차원, coord는 10배
+function render(series: O, dataIndex: number): O {
+  const item = series.data[dataIndex] as number[];
+  const api = {
+    value: (d: number) => Number(item[d]),
+    coord: ([x, y]: number[]) => [x * 10, y * 10],
+    size: () => [10, 10],
+    style: (o: object) => ({ ...o }),
+  };
+  return series.renderItem({ dataIndex }, api);
+}
 const arr = (x: unknown) => (Array.isArray(x) ? x : [x]);
 
 describe('scalar charts', () => {
@@ -95,6 +106,16 @@ describe('scalar charts', () => {
     expect(o.series[0].data).toHaveLength(2);
     const v = opt(buildChart(spec('boxViolin', { y: O, groupBy: 'job', violin: true }), data, []));
     expect(v.series.map((s: O) => s.type)).toEqual(['custom', 'boxplot']);
+    // custom 시리즈 data는 숫자만, renderItem은 유한한 좌표의 polygon을 돌려준다
+    const cs = v.series[0];
+    expect(cs.data.flat().every((x: unknown) => typeof x === 'number')).toBe(true);
+    expect(cs.encode.y).toEqual([1, 2]);
+    for (let i = 0; i < cs.data.length; i++) {
+      const g = render(cs, i);
+      expect(g.type).toBe('polygon');
+      expect(g.shape.points.length).toBeGreaterThan(2);
+      expect(g.shape.points.flat().every(Number.isFinite)).toBe(true);
+    }
     expect(buildChart(spec('boxViolin', { y: O }), mk([row(1, 1, 1, null)]), [])).toEqual({ empty: '값 없음' });
   });
 
@@ -126,7 +147,19 @@ describe('scalar charts', () => {
     expect(o.xAxis.data).toEqual(['A', 'B']);
     // j1: r1,r3,(r5 null) → 1,3 / j2: r2,r4 → 2,4
     expect(o.series[0].data).toEqual([2, 3]);
-    expect(o.series[1].data[0][1]).toBeCloseTo(Math.SQRT2);
+    const eb = o.series[1];
+    expect(eb.data[0][1]).toBeCloseTo(2 - Math.SQRT2);
+    expect(eb.data[0][2]).toBeCloseTo(2 + Math.SQRT2);
+    expect(eb.encode.y).toEqual([1, 2]);
+    for (let i = 0; i < eb.data.length; i++) {
+      const g = render(eb, i);
+      expect(g.type).toBe('group');
+      const [vline] = g.children;
+      expect(vline.shape.y1 / 10).toBeCloseTo(eb.data[i][2]);   // 위쪽 = high
+      expect(vline.shape.y2 / 10).toBeCloseTo(eb.data[i][1]);   // 아래쪽 = low
+      expect(eb.data[i][1]).toBeLessThan(eb.data[i][2]);
+      expect(g.children.flatMap((c: O) => Object.values(c.shape)).every(Number.isFinite)).toBe(true);
+    }
     expect(buildChart(spec('bar', { y: O }), mk([row(1, 1, 1, null)]), [])).toEqual({ empty: '값 없음' });
   });
 });
