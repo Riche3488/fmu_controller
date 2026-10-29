@@ -1,0 +1,10 @@
+node_modules/
+backend/data/
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+frontend/dist/
+*.zip
+my_0test_DriveCycleAT - 복사본/
+.superpowers/
