@@ -629,8 +629,13 @@ def test_int_design_var(...):
 
 ## 측정값 (Task 0에서 기록)
 
-- 1회 해석 시간 (stopTime=1400, tol=1e-4): ____ 초
-- 기본 `runTimeoutSec`: ____ 초 (측정값×5, 최소 600)
-- 출력 반영 확인용 파라미터 (Task 10 테스트용): ____
+- 1회 해석 시간 (stopTime=1400, tol=1e-4, outputInterval=1, 출력 140개): 5.5 초 (stopTime=20: 1.0 초)
+- 기본 `runTimeoutSec`: 600 초 (측정값×5 < 600 → 최소값)
+- 출력 반영 확인용 파라미터 (Task 10 테스트용): `vehicle.body.aerodynamics.Cd` (start 0.28, tunable) — 관측 출력 `controlBus.chassisBus.longitudinalVelocity`
 - 4건 병렬 해석 총 시간 (Task 12): ____ 초 (백엔드: ray / pool)
-- Ray 설치·초기화 결과 (Task 0 Step 2b): ____ (성공/실패 사유, `ray.init` 소요 시간)
+- Ray 설치·초기화 결과 (Task 0 Step 2b): ray 2.59.0 설치 성공, `ray.init` 3.0 초, 2건 병렬 50s 해석 1.3 초 (run별 작업 디렉터리 필요 — 아래 참고)
+
+### Task 0에서 발견한 제약 (모든 이후 Task에 적용)
+
+- Dymola modelDescription은 FMPy 엄격 검증에 실패한다 (`requestedGear` Integer + continuous). `read_model_description(..., validate=False)`, `simulate_fmu(..., validate=False)`를 항상 사용.
+- 이 모델은 초기화 시 **현재 작업 디렉터리**에 `massList.csv`를 만들고 지운다. 병렬 run이 같은 CWD를 공유하면 `fmi2ExitInitializationMode failed`가 난다. `run_simulation`은 run마다 `data/work/<run_id>/`(ASCII)로 `os.chdir` 후 실행하고 끝나면 원래 CWD로 돌아와 디렉터리를 지운다.
