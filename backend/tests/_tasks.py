@@ -19,3 +19,26 @@ def hang():
 
 def pid() -> int:
     return os.getpid()
+
+
+def fake_sim(task):
+    """FMU 없이 SimTask를 흉내: start_values의 sleep/fail/hang 키로 동작 제어, 파라미터를 시계열 컬럼으로 기록."""
+    import numpy as np
+
+    from app.fmu.simulate import SimOutcome
+    from app.results.storage import write_result
+
+    t0 = time.perf_counter()
+    sv = task.start_values
+    if sv.get("hang"):
+        hang()
+    time.sleep(float(sv.get("sleep", 0.0)))
+    if sv.get("fail"):
+        return SimOutcome(ok=False, error="CVode: convergence failure", elapsed_sec=time.perf_counter() - t0)
+    names = ["time", *sorted(k for k in sv if k not in ("sleep", "fail", "hang"))]
+    arr = np.zeros(11, dtype=[(n, "f8") for n in names])
+    arr["time"] = np.linspace(task.sim.start_time, task.sim.stop_time, 11)
+    for n in names[1:]:
+        arr[n] = float(sv[n])
+    write_result(task.out_path, arr)
+    return SimOutcome(ok=True, error=None, elapsed_sec=time.perf_counter() - t0, columns=names)

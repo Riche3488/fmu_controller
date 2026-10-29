@@ -632,7 +632,7 @@ def test_int_design_var(...):
 - 1회 해석 시간 (stopTime=1400, tol=1e-4, outputInterval=1, 출력 140개): 5.5 초 (stopTime=20: 1.0 초)
 - 기본 `runTimeoutSec`: 600 초 (측정값×5 < 600 → 최소값)
 - 출력 반영 확인용 파라미터 (Task 10 테스트용): `vehicle.body.aerodynamics.Cd` (start 0.28, tunable) — 관측 출력 `controlBus.chassisBus.longitudinalVelocity`
-- 4건 병렬 해석 총 시간 (Task 12): ____ 초 (백엔드: ray / pool)
+- 4건 병렬 해석 총 시간 (Task 12): 7.4 초 (백엔드: ray, workers 4, run당 5.8 초; 순차라면 ~23 초)
 - Ray 설치·초기화 결과 (Task 0 Step 2b): ray 2.59.0 설치 성공, `ray.init` 3.0 초, 2건 병렬 50s 해석 1.3 초 (run별 작업 디렉터리 필요 — 아래 참고)
 
 ### Task 0에서 발견한 제약 (모든 이후 Task에 적용)

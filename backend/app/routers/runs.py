@@ -1,12 +1,14 @@
 import math
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from ..db import get_session
 from ..models import Run
+from ..results.query import ObjectiveNotFound, RunQuery, query_runs
 from ..results.storage import downsample, read_result
-from ..schemas import Timeseries
+from ..schemas import RunPage, Timeseries
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
@@ -45,3 +47,27 @@ def get_timeseries(
         missing = e.args[0] if e.args and isinstance(e.args[0], list) else [str(e)]
         raise HTTPException(400, f"기록되지 않은 변수: {', '.join(missing)}") from e
     return Timeseries(time=_clean(df["time"]), series={n: _clean(df[n]) for n in names})
+
+
+@router.get("", response_model=RunPage)
+async def list_runs(
+    request: Request,
+    fmu_id: str | None = Query(None, alias="fmuId"),
+    job_ids: str | None = Query(None, alias="jobIds"),
+    status: str | None = None,
+    objective_ids: str | None = Query(None, alias="objectiveIds"),
+    sort_by: str = Query("index", alias="sortBy"),
+    sort_dir: str = Query("asc", alias="sortDir", pattern="^(asc|desc)$"),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100000),
+    session: Session = Depends(get_session),
+):
+    q = RunQuery(fmu_id=fmu_id, job_ids=split_csv(job_ids) or None, status=status,
+                 objective_ids=split_csv(objective_ids) or None, sort_by=sort_by, sort_dir=sort_dir,
+                 offset=offset, limit=limit)
+    st = request.app.state
+    try:
+        # 목적함수 계산은 블로킹이므로 스레드풀에서
+        return await run_in_threadpool(query_runs, session, st.settings, st.evaluator, q)
+    except ObjectiveNotFound as e:
+        raise HTTPException(404, f"목적함수를 찾을 수 없습니다: {e.args[0]}") from e

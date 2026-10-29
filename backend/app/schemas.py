@@ -1,5 +1,6 @@
 """API 스키마 — frontend/src/api/types.ts 와 동일한 형태 (JSON은 camelCase)."""
 from datetime import datetime
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
@@ -98,3 +99,74 @@ class ObjectiveTestIn(CamelModel):
 class ObjectiveTestResult(ObjectiveValue):
     stdout: str
     duration_ms: int
+
+
+class SweepList(CamelModel):
+    name: str
+    mode: Literal["list"]
+    values: list[float] = Field(min_length=1)
+
+
+class SweepRange(CamelModel):
+    name: str
+    mode: Literal["range"]
+    min: float
+    max: float
+    steps: int = Field(ge=1)
+
+
+SweepParam = Annotated[SweepList | SweepRange, Field(discriminator="mode")]
+ParamValue = float | bool
+
+
+class RunSettingsBase(CamelModel):
+    name: str
+    fmu_id: str
+    fixed_params: dict[str, ParamValue] = {}
+    sim: SimSettings
+    record_variables: list[str]
+    workers: int = Field(ge=1)
+    run_timeout_sec: float = Field(gt=0)
+
+
+class BatchRequest(RunSettingsBase):
+    params: list[SweepParam] = Field(min_length=1)
+    sampling: Literal["grid", "zip", "lhs", "random"]
+    n_samples: int | None = Field(default=None, ge=1)
+
+
+class JobOut(CamelModel):
+    id: str
+    kind: Literal["batch", "optimization"]
+    name: str
+    fmu_id: str
+    status: Literal["queued", "running", "done", "failed", "cancelled"]
+    total: int
+    completed: int
+    failed: int
+    created_at: datetime
+    finished_at: datetime | None
+    error: str | None
+    config: dict
+    objective_snapshot: dict | None
+
+
+class RunOut(CamelModel):
+    id: str
+    job_id: str
+    fmu_id: str
+    index: int
+    params: dict[str, ParamValue]
+    status: Literal["ok", "failed"]
+    error: str | None
+    elapsed_sec: float
+
+
+class RunRow(RunOut):
+    objectives: dict[str, ObjectiveValue]
+
+
+class RunPage(CamelModel):
+    total: int
+    items: list[RunRow]
+    code_hashes: dict[str, str]
