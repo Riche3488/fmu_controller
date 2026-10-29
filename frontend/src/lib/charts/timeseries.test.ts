@@ -148,3 +148,15 @@ describe('fft', () => {
     expect(build(spec('fft', { vars: ['a'] }), { r1: { time: [0, 1], series: { a: [1, 2] } } })).toEqual({ empty: '값 없음' });
   });
 });
+
+describe('tsDiff 기준 run', () => {
+  it('refRunId가 없으면 선택의 첫 run 기준', () => {
+    const o = opt(build(spec('tsDiff', { vars: ['a'] }), ts, ['r3', 'r1']));
+    const r3 = o.series.find((s: { id: string }) => s.id === 'r3');
+    expect(r3.data.every((d: number[]) => d[1] === 0)).toBe(true);
+  });
+  it('refRunId 데이터가 아직 없으면 기준을 바꾸지 않고 안내', () => {
+    const { r1, r3 } = ts;
+    expect(build(spec('tsDiff', { vars: ['a'], refRunId: 'r2' }), { r1, r3 })).toEqual({ empty: '기준 run 데이터를 불러오는 중' });
+  });
+});

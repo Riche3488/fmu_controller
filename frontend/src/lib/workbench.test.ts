@@ -96,13 +96,7 @@ describe('ref keys', () => {
 describe('chart registry', () => {
   const data = { rows: [], objectives: [], params: [], vars: [], jobs: [], variants: [] };
   test('등록 안 된 종류는 준비 중', () => {
-    const orig = CHART_BUILDERS.fft;
-    delete CHART_BUILDERS.fft;
-    try {
-      expect(buildChart({ id: 'a', title: 't', chart: 'fft' }, data, [])).toEqual({ empty: '준비 중' });
-    } finally {
-      CHART_BUILDERS.fft = orig;
-    }
+    expect(buildChart({ id: 'a', title: 't', chart: '__unknown__' as ChartKind }, data, [])).toEqual({ empty: '준비 중' });
   });
   test('등록된 빌더를 부른다', () => {
     const orig = CHART_BUILDERS.fft;

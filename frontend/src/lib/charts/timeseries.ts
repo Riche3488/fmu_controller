@@ -143,8 +143,10 @@ const tsBand: ChartBuilder = (spec, data, _selected, ts = {}) => {
 const tsDiff: ChartBuilder = (spec, data, selected, ts = {}) => {
   const s = singleAxis(runsOf(spec, data, ts), spec.vars ?? []);
   if (!isSingle(s)) return s;
-  // 기준 run은 refRunId, 없거나 아직 안 왔으면 처음 run
-  const ref = s.runs.find(r => r.id === spec.refRunId) ?? s.runs[0];
+  // 기준 run은 refRunId, 없으면 선택(없으면 화면 맨 앞)의 첫 run. refRunId가 아직 안 왔으면 기준을 몰래 바꾸지 않는다.
+  const first = selected.length ? s.runs.find(r => r.id === selected[0]) : undefined;
+  const ref = spec.refRunId ? s.runs.find(r => r.id === spec.refRunId) : first ?? s.runs[0];
+  if (!ref) return { empty: '기준 run 데이터를 불러오는 중' };
   const grid = ref.ts.time;
   const yRef = ref.ts.series[s.v];
   return {

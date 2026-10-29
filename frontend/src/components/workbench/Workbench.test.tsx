@@ -13,7 +13,7 @@ const titles = () => screen.getAllByTestId('panel-title').map(t => t.textContent
 // 테스트가 바꾼 빌더를 원래 등록된 것으로 되돌린다
 const ORIGINAL = { ...CHART_BUILDERS };
 afterEach(() => {
-  for (const k of ['scatter', 'histogram', 'fft'] as const) {
+  for (const k of ['scatter', 'histogram'] as const) {
     if (ORIGINAL[k]) CHART_BUILDERS[k] = ORIGINAL[k]; else delete CHART_BUILDERS[k];
   }
 });
@@ -57,7 +57,6 @@ describe('Workbench', () => {
         ],
       },
     });
-    delete CHART_BUILDERS.fft;   // 등록 안 된 차트 종류 흉내
     renderWith(<Workbench fmuId={MOCK_FMU_ID} filter={{}} />, { client });
     await waitFor(() => expect(panels()).toHaveLength(4));
     await userEvent.click(screen.getByRole('button', { name: '불러오기' }));
@@ -67,7 +66,7 @@ describe('Workbench', () => {
     const [bad, good] = panels();
     expect(within(bad).getByTestId('panel-missing')).toHaveTextContent('찾을 수 없음: other.speed, other.torque');
     expect(within(good).queryByTestId('panel-missing')).toBeNull();
-    expect(within(good).getByTestId('panel-empty')).toHaveTextContent('준비 중');
+    expect(within(good).getByTestId('panel-empty')).toHaveTextContent('변수를 선택하세요');
     expect(screen.getByTestId('load-notice')).toHaveTextContent('형식이 맞지 않는 패널 1개');
   });
 
@@ -121,6 +120,27 @@ describe('Workbench', () => {
     renderWith(<Workbench fmuId={MOCK_FMU_ID} filter={{}} />, { client });
     expect(await screen.findByTestId('workbench-error')).toHaveTextContent('서버 오류 500');
     await waitFor(() => expect(screen.getAllByTestId('panel-empty')).toHaveLength(4));
+  });
+
+  test('시계열 패널은 선택 없이도 처음 run의 시계열을 받아 차트를 그린다', async () => {
+    const client = createMockClient({ tickMs: 5 });
+    const job = await finishedBatch(client);
+    const rows = (await client.listRuns({ jobIds: [job.id] })).items;
+    const V = 'controlBus.chassisBus.longitudinalVelocity';
+    const spy = vi.spyOn(client, 'getTimeseries');
+    await client.createPreset({
+      name: '시계열 대시보드', kind: 'dashboard', sourceFmuId: MOCK_FMU_ID,
+      config: { layout: '1x1', syncTimeZoom: true, panels: [{ id: 'a', title: '속도', chart: 'tsOverlay', vars: [V] }] },
+    });
+    renderWith(<Workbench fmuId={MOCK_FMU_ID} filter={{}} />, { client });
+    await waitFor(() => expect(panels()).toHaveLength(4));
+    await userEvent.click(screen.getByRole('button', { name: '불러오기' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /시계열 대시보드/ }));
+    await waitFor(() => expect(titles()).toEqual(['속도']));
+    expect(await within(panels()[0]).findByTestId('panel-chart')).toBeTruthy();
+    const ids = rows.map(r => r.id);
+    expect(spy).toHaveBeenCalledWith(ids[0], [V], 2000);
+    expect(spy.mock.calls.every(([id, vars]) => ids.includes(id) && vars.join() === V)).toBe(true);
   });
 
   test('찾을 수 없는 변수를 쓰는 시계열 패널은 시계열을 받지 않는다', async () => {
