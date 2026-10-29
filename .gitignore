@@ -8,3 +8,5 @@ frontend/dist/
 *.zip
 my_0test_DriveCycleAT - 복사본/
 .superpowers/
+*.egg-info/
+massList.csv

@@ -6,13 +6,13 @@ from sqlalchemy.orm import Session
 
 from ..db import get_session
 from ..fmu import registry
-from ..models import Fmu, Run
+from ..models import Fmu, Job, Run
 from ..schemas import DefaultExperiment, FmuSummary, Page, VariableOut
 
 router = APIRouter(prefix="/api/fmus", tags=["fmus"])
 
 FMU_NOT_FOUND = "FMU를 찾을 수 없습니다"
-HAS_RUNS = "이 FMU에 저장된 해석 결과가 있어 삭제할 수 없습니다"
+HAS_RUNS = "이 FMU에 저장된 해석 결과(잡)가 있어 삭제할 수 없습니다"
 
 
 def to_summary(fmu: Fmu, n_runs: int) -> FmuSummary:
@@ -59,7 +59,8 @@ def get_fmu(fmu_id: str, session: Session = Depends(get_session)):
 @router.delete("/{fmu_id}", status_code=204)
 def delete_fmu(fmu_id: str, request: Request, session: Session = Depends(get_session)):
     fmu = get_fmu_or_404(session, fmu_id)
-    if registry.count_runs(session, fmu_id):
+    has_jobs = session.scalar(select(func.count()).select_from(Job).where(Job.fmu_id == fmu_id))
+    if registry.count_runs(session, fmu_id) or has_jobs:
         raise HTTPException(409, HAS_RUNS)
     registry.delete_fmu(session, fmu, request.app.state.settings)
 

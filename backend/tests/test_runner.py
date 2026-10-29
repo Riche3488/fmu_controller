@@ -4,6 +4,8 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
+LOCAL = "http://127.0.0.1"
+
 from app.config import Settings
 from app.main import create_app
 from app.models import Fmu, Job, Run, Variable
@@ -33,7 +35,7 @@ def seed_fake_fmu(session_factory):
 def mclient(tmp_path_factory):
     settings = Settings(data_dir=tmp_path_factory.mktemp("runner") / "data", parallel="pool", max_workers=4)
     app = create_app(settings)
-    with TestClient(app) as c:
+    with TestClient(app, base_url=LOCAL) as c:
         app.state.jobs.sim_fn = fake_sim
         seed_fake_fmu(app.state.session_factory)
         ex = app.state.executor
@@ -174,7 +176,7 @@ def test_events_for_finished_job_end_immediately(mclient):
 def test_interrupted_jobs_marked_on_startup(tmp_path):
     settings = Settings(data_dir=tmp_path / "data", parallel="pool", max_workers=1)
     app = create_app(settings)
-    with TestClient(app):
+    with TestClient(app, base_url=LOCAL):
         seed_fake_fmu(app.state.session_factory)
         with app.state.session_factory() as s:
             s.add(Job(id="j-run", kind="batch", name="x", fmu_id=FMU_ID, status="running", config={}))
@@ -183,7 +185,7 @@ def test_interrupted_jobs_marked_on_startup(tmp_path):
             s.add(Run(id="r1", job_id="j-run", fmu_id=FMU_ID, index=0, params={}, status="ok", result_path="x"))
             s.commit()
     app2 = create_app(settings)
-    with TestClient(app2) as c:
+    with TestClient(app2, base_url=LOCAL) as c:
         jobs = {j["id"]: j for j in c.get("/api/jobs").json()}
         assert jobs["j-run"]["status"] == "failed" and jobs["j-run"]["error"] == "interrupted"
         assert jobs["j-q"]["status"] == "failed"

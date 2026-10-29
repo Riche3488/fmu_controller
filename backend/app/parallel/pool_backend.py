@@ -31,6 +31,10 @@ class PoolExecutor:
         self._entries: dict[TaskHandle, _Entry] = {}
         self._lock = threading.RLock()
 
+    @property
+    def generation(self) -> int:
+        return self._gen
+
     def _get_pool(self) -> Pool:
         if self._pool is None:
             self._pool = self._ctx.Pool(self.max_workers, maxtasksperchild=50)

@@ -21,8 +21,12 @@ class Settings:
     data_dir: Path = DEFAULT_DATA_DIR
     parallel: ParallelMode = "auto"
     max_workers: int = field(default_factory=_default_workers)
+    # 목적함수 평가 전용 슬롯 (시뮬레이션과 분리)
+    eval_workers: int = 2
     # 빌드된 프론트엔드 (없으면 API만 제공)
     static_dir: Path = DEFAULT_STATIC_DIR
+    # 로컬 전용: 이 Host로 온 요청만 받는다
+    allowed_hosts: tuple[str, ...] = ("127.0.0.1", "localhost")
 
     def __post_init__(self):
         object.__setattr__(self, "data_dir", Path(self.data_dir).resolve())
@@ -40,6 +44,8 @@ class Settings:
             kwargs["parallel"] = v
         if v := os.environ.get("FMUC_MAX_WORKERS"):
             kwargs["max_workers"] = int(v)
+        if v := os.environ.get("FMUC_EVAL_WORKERS"):
+            kwargs["eval_workers"] = int(v)
         if v := os.environ.get("FMUC_STATIC_DIR"):
             kwargs["static_dir"] = Path(v)
         return cls(**kwargs)

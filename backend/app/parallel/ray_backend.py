@@ -11,20 +11,40 @@ from .base import TaskCancelled, TaskHandle
 BACKEND_DIR = str(Path(__file__).resolve().parents[2])
 
 
+def _init_ray(num_cpus: int, resources: dict[str, float] | None = None) -> bool:
+    """Ray를 시작한다. 이미 떠 있으면 False (그 경우 소유하지 않으므로 shutdown하지 않는다)."""
+    if ray.is_initialized():
+        return False
+    pythonpath = os.pathsep.join(p for p in (BACKEND_DIR, os.environ.get("PYTHONPATH")) if p)
+    ray.init(
+        num_cpus=num_cpus,
+        resources=resources,
+        include_dashboard=False,
+        logging_level="ERROR",
+        log_to_driver=False,
+        runtime_env={"env_vars": {"PYTHONPATH": pythonpath}},
+    )
+    return True
+
+
+def create_ray_executors(sim_workers: int, eval_workers: int) -> tuple["RayExecutor", "RayExecutor"]:
+    """하나의 Ray 런타임에서 사용자 정의 자원(fmuc_sim / fmuc_eval)으로 슬롯을 분리한 두 실행기."""
+    sim_workers, eval_workers = max(1, sim_workers), max(1, eval_workers)
+    owns = _init_ray(sim_workers + eval_workers, {"fmuc_sim": sim_workers, "fmuc_eval": eval_workers})
+    sim = RayExecutor(sim_workers, resource="fmuc_sim", owns_runtime=False)
+    ev = RayExecutor(eval_workers, resource="fmuc_eval", owns_runtime=owns)  # 마지막에 내려가는 쪽이 런타임 종료
+    return sim, ev
+
+
 class RayExecutor:
     name = "ray"
+    generation = 0  # Ray는 작업 하나만 취소하므로 다른 작업이 재시작되지 않는다
 
-    def __init__(self, max_workers: int):
+    def __init__(self, max_workers: int, resource: str | None = None, owns_runtime: bool | None = None):
         self.max_workers = max(1, max_workers)
-        if not ray.is_initialized():
-            pythonpath = os.pathsep.join(p for p in (BACKEND_DIR, os.environ.get("PYTHONPATH")) if p)
-            ray.init(
-                num_cpus=self.max_workers,
-                include_dashboard=False,
-                logging_level="ERROR",
-                log_to_driver=False,
-                runtime_env={"env_vars": {"PYTHONPATH": pythonpath}},
-            )
+        self._resource = resource
+        started = _init_ray(self.max_workers) if resource is None else False
+        self._owns = started if owns_runtime is None else owns_runtime
         self._remote_fns: dict[Any, Any] = {}
         self._refs: dict[TaskHandle, Any] = {}
         self._cancelled: set[TaskHandle] = set()
@@ -33,7 +53,8 @@ class RayExecutor:
     def _remote(self, fn):
         r = self._remote_fns.get(fn)
         if r is None:
-            r = self._remote_fns[fn] = ray.remote(num_cpus=1, max_retries=0)(fn)
+            opts = {"num_cpus": 0, "resources": {self._resource: 1}} if self._resource else {"num_cpus": 1}
+            r = self._remote_fns[fn] = ray.remote(max_retries=0, **opts)(fn)
         return r
 
     def submit(self, fn, *args) -> TaskHandle:
@@ -82,4 +103,5 @@ class RayExecutor:
         with self._lock:
             self._refs.clear()
             self._cancelled.clear()
-        ray.shutdown()
+        if self._owns:
+            ray.shutdown()

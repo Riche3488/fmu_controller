@@ -117,7 +117,7 @@ def test_app_creates_and_shuts_down_executor(settings):
     from app.main import create_app
 
     app = create_app(settings)
-    with TestClient(app) as c:
+    with TestClient(app, base_url="http://127.0.0.1") as c:
         ex = app.state.executor
         assert ex.name == "pool" and ex.max_workers == settings.max_workers
         assert c.get("/api/health").json()["parallelBackend"] == ex.name

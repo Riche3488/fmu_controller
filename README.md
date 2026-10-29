@@ -26,13 +26,14 @@ Ray 설치가 안 되는 환경이면 `pip install -e "backend[test]"`만 설치
 .\run.ps1 -Workers 6 -Build
 ```
 
-서버는 `127.0.0.1`에만 바인딩됩니다. 목적함수 `.py`는 서버에서 그대로 실행되는 코드이므로 외부에 노출하지 마세요.
+서버는 `127.0.0.1`에만 바인딩되고, Host가 `127.0.0.1`/`localhost`가 아닌 요청과 다른 사이트(Origin)에서 온 쓰기 요청은 거절합니다. 목적함수 `.py`는 서버에서 그대로 실행되는 코드이므로 외부에 노출하지 마세요.
 
 | 환경변수 | 기본값 | 설명 |
 |---|---|---|
 | `FMUC_DATA_DIR` | `backend/data` | DB·FMU·결과 저장 위치 (**ASCII 경로만**) |
 | `FMUC_PARALLEL` | `auto` | `auto` / `ray` / `pool` |
-| `FMUC_MAX_WORKERS` | CPU 수 − 1 | 병렬 작업 수 상한 |
+| `FMUC_MAX_WORKERS` | CPU 수 − 1 | 시뮬레이션 병렬 슬롯 수 (모든 잡이 공유) |
+| `FMUC_EVAL_WORKERS` | 2 | 목적함수 평가 전용 슬롯 수 (시뮬레이션과 분리) |
 | `FMUC_STATIC_DIR` | `frontend/dist` | 빌드된 프론트엔드 |
 
 UI만 개발할 때는 `cd frontend; $env:VITE_API_FMUS='mock'; ...; npm run dev`처럼 도메인(`FMUS`, `OBJECTIVES`, `JOBS`, `RUNS`)별로 mock을 켤 수 있습니다. dev 서버는 `/api`를 `FMUC_API`(기본 `http://127.0.0.1:8000`)로 프록시합니다.

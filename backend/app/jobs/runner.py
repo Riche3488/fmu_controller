@@ -91,6 +91,8 @@ class JobManager:
         self._jobs: dict[str, _JobCtx] = {}
         self._subs: dict[str, set[tuple[asyncio.AbstractEventLoop, asyncio.Queue]]] = {}
         self._lock = threading.Lock()
+        # 모든 잡이 공유하는 시뮬레이션 슬롯
+        self._slots = threading.BoundedSemaphore(executor.max_workers)
 
     # ---------- 이벤트 ----------
     def subscribe(self, job_id: str, loop: asyncio.AbstractEventLoop) -> asyncio.Queue:
@@ -242,70 +244,85 @@ class JobManager:
 
     def run_cases(self, job_id: str, fmu_id: str, req, cases: Iterator[CaseSpec],
                   on_done: Callable[[CaseSpec, Run], None] | None = None) -> bool:
-        """케이스들을 병렬 실행. cases는 지연 생성 가능(최적화 ask). 취소되면 False."""
+        """케이스들을 병렬 실행. cases는 지연 생성 가능(최적화 ask). 취소되면 False.
+
+        모든 잡이 공유하는 슬롯(_slots)을 얻은 뒤에만 제출하므로 제출 시각 ≈ 시작 시각이다
+        (큐 대기 시간이 run 타임아웃에 포함되지 않는다)."""
         ctx = self._jobs[job_id]
         extract_dir = str(get_extract_dir(self.settings, fmu_id))
         results_dir = self.settings.data_dir / "results" / job_id
         limit = max(1, min(req.workers, self.executor.max_workers))
         inflight: dict[Any, _Inflight] = {}
         exhausted = False
+        gen = self.executor.generation
 
-        def submit_next() -> bool:
-            case = next(cases, None)
-            if case is None:
-                return False
+        def submit(case: CaseSpec) -> None:
             run_id = new_id()
             task = SimTask(fmu_id=fmu_id, extract_dir=extract_dir, start_values=case.params, sim=req.sim,
                            record_variables=list(req.record_variables), out_path=str(results_dir / f"{run_id}.parquet"),
                            work_dir=str(self.settings.data_dir / "work" / run_id))
             inflight[self.executor.submit(self.sim_fn, task)] = _Inflight(case, run_id, time.monotonic())
-            return True
 
-        while True:
-            if ctx.cancel.is_set():
-                for h in list(inflight):
-                    self.executor.cancel(h, force=True)
+        def drop(h) -> _Inflight:
+            """실행 중 작업을 강제 취소하고 슬롯을 반납"""
+            info = inflight.pop(h)
+            self.executor.cancel(h, force=True)
+            try:
+                self.executor.result(h)
+            except Exception:
+                pass
+            self._slots.release()
+            shutil.rmtree(self.settings.data_dir / "work" / info.run_id, ignore_errors=True)
+            return info
+
+        try:
+            while True:
+                if ctx.cancel.is_set():
+                    return False
+                while not exhausted and len(inflight) < limit and self._slots.acquire(blocking=False):
+                    case = next(cases, None)
+                    if case is None:
+                        self._slots.release()
+                        exhausted = True
+                    else:
+                        submit(case)
+                if exhausted and not inflight:
+                    return True
+                if not inflight:  # 다른 잡이 슬롯을 모두 쓰는 중
+                    time.sleep(POLL_SEC)
+                    continue
+                for h in self.executor.wait_any(list(inflight), timeout=POLL_SEC):
+                    info = inflight.pop(h)
+                    self._slots.release()
+                    out_path = str(results_dir / f"{info.run_id}.parquet")
                     try:
-                        self.executor.result(h)
-                    except Exception:
-                        pass
-                    shutil.rmtree(self.settings.data_dir / "work" / inflight.pop(h).run_id, ignore_errors=True)
-                return False
-            while not exhausted and len(inflight) < limit:
-                if not submit_next():
-                    exhausted = True
-            if exhausted and not inflight:
-                return True
-            for h in self.executor.wait_any(list(inflight), timeout=POLL_SEC):
-                info = inflight.pop(h)
-                out_path = str(results_dir / f"{info.run_id}.parquet")
-                try:
-                    out, err = self.executor.result(h), None
-                except TaskCancelled:
-                    out, err = None, TIMEOUT_ERROR
-                except Exception as e:
-                    out, err = None, f"{type(e).__name__}: {e}"
-                run = self._record(job_id, fmu_id, info.case, info.run_id, out, err, out_path)
-                if on_done:
-                    on_done(info.case, run)
-            now = time.monotonic()
-            overdue = [h for h, i in inflight.items() if now - i.started > req.run_timeout_sec]
-            for h in overdue:
-                info = inflight.pop(h)
-                self.executor.cancel(h, force=True)
-                try:
-                    self.executor.result(h)
-                except Exception:
-                    pass
-                shutil.rmtree(self.settings.data_dir / "work" / info.run_id, ignore_errors=True)
-                run = self._record(job_id, fmu_id, info.case, info.run_id, None, TIMEOUT_ERROR, "")
-                if on_done:
-                    on_done(info.case, run)
-            if overdue:
-                # Pool 폴백은 취소 시 다른 run을 재시작하므로 시작 시각을 갱신
+                        out, err = self.executor.result(h), None
+                    except TaskCancelled:
+                        out, err = None, TIMEOUT_ERROR
+                    except Exception as e:
+                        out, err = None, f"{type(e).__name__}: {e}"
+                    run = self._record(job_id, fmu_id, info.case, info.run_id, out, err, out_path)
+                    if on_done:
+                        on_done(info.case, run)
+                if self.executor.generation != gen:
+                    # Pool 폴백이 (어느 잡에서든) 강제 취소로 풀을 재시작하면 남은 run은 처음부터 다시 돈다
+                    gen = self.executor.generation
+                    now = time.monotonic()
+                    for i in inflight.values():
+                        i.started = now
                 now = time.monotonic()
-                for i in inflight.values():
-                    i.started = now
+                for h in [h for h, i in inflight.items() if now - i.started > req.run_timeout_sec]:
+                    info = drop(h)
+                    gen = self.executor.generation  # 방금 우리가 일으킨 재시작
+                    for i in inflight.values():
+                        i.started = time.monotonic()
+                    run = self._record(job_id, fmu_id, info.case, info.run_id, None, TIMEOUT_ERROR, "")
+                    if on_done:
+                        on_done(info.case, run)
+        finally:
+            # 정상 종료/취소/예외 어느 경우든 남은 작업을 정리한다
+            for h in list(inflight):
+                drop(h)
 
     def _run_cases(self, job_id: str, fmu_id: str, req, cases: Iterator[CaseSpec]) -> None:
         self._set_running(job_id)

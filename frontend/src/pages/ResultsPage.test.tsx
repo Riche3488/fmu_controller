@@ -107,4 +107,28 @@ describe('ResultsPage', () => {
     expect(header).toBe(`job,index,status,p,fuel[${obj.codeHash.slice(0, 8)}]`);
     expect(text.trim().split('\n').length).toBeGreaterThan(3);
   });
+
+  test('CSV header hash comes from the same response as the exported values', async () => {
+    const { client, obj } = await setup();
+    const orig = client.listRuns.bind(client);
+    // 페이지 조회와 전체 조회 사이에 코드가 바뀐 상황: 두 응답의 해시가 다르다
+    vi.spyOn(client, 'listRuns').mockImplementation(async q => {
+      const page = await orig(q);
+      return (q.limit ?? 0) > 1000 ? { ...page, codeHashes: { [obj.id]: 'feedbeef'.repeat(8) } } : page;
+    });
+    let blob: Blob | null = null;
+    URL.createObjectURL = vi.fn((b: Blob) => { blob = b; return 'blob:x'; });
+    URL.revokeObjectURL = vi.fn();
+    renderApp({ route: ROUTE, client });
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'fuel' }));
+    await screen.findByRole('columnheader', { name: /fuel/ });
+    await userEvent.click(screen.getByRole('button', { name: 'CSV 내보내기' }));
+    await waitFor(() => expect(blob).not.toBeNull());
+    const text = await new Promise<string>(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsText(blob!);
+    });
+    expect(text.split('\n')[0]).toBe('job,index,status,p,fuel[feedbeef]');
+  });
 });

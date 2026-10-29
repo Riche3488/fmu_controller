@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+LOCAL = "http://127.0.0.1"
+
 from app.config import Settings
 from app.main import create_app
 
@@ -23,7 +25,7 @@ def app(settings):
 
 @pytest.fixture
 def client(app):
-    with TestClient(app) as c:
+    with TestClient(app, base_url=LOCAL) as c:
         yield c
 
 

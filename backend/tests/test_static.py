@@ -3,6 +3,8 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
+LOCAL = "http://127.0.0.1"
+
 from app.config import Settings
 from app.main import create_app
 from tests._tasks import fake_sim
@@ -21,7 +23,7 @@ def dist(tmp_path):
 @pytest.fixture
 def sclient(tmp_path, dist):
     app = create_app(Settings(data_dir=tmp_path / "data", parallel="pool", max_workers=1, static_dir=dist))
-    with TestClient(app) as c:
+    with TestClient(app, base_url=LOCAL) as c:
         yield c
 
 
@@ -47,7 +49,7 @@ def test_unknown_api_path_is_json_404(sclient):
 
 def test_no_static_dir_is_fine(tmp_path):
     app = create_app(Settings(data_dir=tmp_path / "d2", parallel="pool", max_workers=1, static_dir=tmp_path / "missing"))
-    with TestClient(app) as c:
+    with TestClient(app, base_url=LOCAL) as c:
         assert c.get("/api/health").status_code == 200
         assert c.get("/").status_code == 404
 
@@ -55,7 +57,7 @@ def test_no_static_dir_is_fine(tmp_path):
 def test_restart_keeps_results_and_recomputes_objectives(tmp_path):
     settings = Settings(data_dir=tmp_path / "data", parallel="pool", max_workers=2)
     app = create_app(settings)
-    with TestClient(app) as c:
+    with TestClient(app, base_url=LOCAL) as c:
         app.state.jobs.sim_fn = fake_sim
         seed_fake_fmu(app.state.session_factory)
         job = c.post("/api/jobs/batch", json=batch(name="persist")).json()
@@ -65,7 +67,7 @@ def test_restart_keeps_results_and_recomputes_objectives(tmp_path):
             time.sleep(0.05)
         oid = c.post("/api/objectives", json={"name": "p", "code": "def evaluate(r, p):\n    return float(r['p'].iloc[-1])\n"}).json()["id"]
     app2 = create_app(settings)
-    with TestClient(app2) as c:
+    with TestClient(app2, base_url=LOCAL) as c:
         page = c.get("/api/runs", params={"jobIds": job["id"], "objectiveIds": oid, "sortBy": "index"}).json()
         assert [r["objectives"][oid]["value"] for r in page["items"]] == [1.0, 2.0, 3.0]
         assert c.get(f"/api/fmus/{FMU_ID}").json()["nRuns"] == 3
@@ -74,7 +76,7 @@ def test_restart_keeps_results_and_recomputes_objectives(tmp_path):
 def test_timeseries_unrecorded_variable_400(tmp_path):
     settings = Settings(data_dir=tmp_path / "data", parallel="pool", max_workers=1)
     app = create_app(settings)
-    with TestClient(app) as c:
+    with TestClient(app, base_url=LOCAL) as c:
         app.state.jobs.sim_fn = fake_sim
         seed_fake_fmu(app.state.session_factory)
         job = c.post("/api/jobs/batch", json=batch(name="ts", params=[{"name": "p", "mode": "list", "values": [1]}])).json()

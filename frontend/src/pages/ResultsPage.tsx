@@ -78,7 +78,9 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
   const toggle = (id: string) => setSelected(s => (s.includes(id) ? s.filter(x => x !== id) : s.length >= 10 ? s : [...s, id]));
 
   const exportCsv = () => {
-    const header = ['job', 'index', 'status', ...paramNames, ...objectives.map(o => `${o.name}[${(codeHashes[o.id] ?? '').slice(0, 8)}]`)];
+    // 값과 해시는 반드시 같은 응답에서 가져온다 (두 조회 사이에 코드가 바뀌어도 라벨이 어긋나지 않도록)
+    const exportHashes = allQuery.data?.codeHashes ?? {};
+    const header = ['job', 'index', 'status', ...paramNames, ...objectives.map(o => `${o.name}[${(exportHashes[o.id] ?? '').slice(0, 8)}]`)];
     const lines = allRows.map(r => csvLine([
       jobName(r.jobId), r.index, r.status, ...paramNames.map(p => r.params[p]), ...objectives.map(o => r.objectives[o.id]?.value),
     ]));
