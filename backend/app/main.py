@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from .config import Settings
 from .db import init_db, make_engine, make_session_factory
+from .parallel.base import create_executor
 from .routers import fmus, runs
 from .schemas import Health
 
@@ -20,10 +21,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.settings = settings
         app.state.engine = engine
         app.state.session_factory = make_session_factory(engine)
-        app.state.parallel_backend = "pool"
+        executor = create_executor(settings.parallel, settings.max_workers)
+        app.state.executor = executor
         try:
             yield
         finally:
+            executor.shutdown()
             engine.dispose()
 
     app = FastAPI(title="FMU Controller", lifespan=lifespan)
@@ -32,7 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/health", response_model=Health)
     def health():
-        return Health(status="ok", parallel_backend=app.state.parallel_backend)
+        return Health(status="ok", parallel_backend=app.state.executor.name)
 
     return app
 
