@@ -45,9 +45,15 @@ function axisValue(r: RunRow, key: string): number | null {
   return r.objectives[key.slice(10)]?.value ?? null;
 }
 
+function useVariants(fmuId: string) {
+  const api = useApi();
+  return useQuery({ queryKey: ['variants', fmuId], queryFn: () => api.listVariants(fmuId) });
+}
+
 function FmuResults({ fmu }: { fmu: FmuSummary }) {
   const api = useApi();
   const [jobIds, setJobIds] = useState<string[]>([]);
+  const [variantIds, setVariantIds] = useState<string[]>([]);
   const [status, setStatus] = useState<'ok' | 'failed' | null>(null);
   const [objectiveIds, setObjectiveIds] = useState<string[]>([]);
   const [sort, setSort] = useState<Sort>({ by: 'index', dir: 'asc' });
@@ -59,7 +65,11 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
   const objectives = useObjectiveMeta(objectiveIds);
 
   const jobs = useQuery({ queryKey: ['jobs', fmu.id], queryFn: () => api.listJobs({ fmuId: fmu.id }) });
-  const filter = { fmuId: fmu.id, jobIds: jobIds.length ? jobIds : undefined, status: status ?? undefined, objectiveIds };
+  const variants = useVariants(fmu.id);
+  const filter = {
+    fmuId: fmu.id, jobIds: jobIds.length ? jobIds : undefined, status: status ?? undefined, objectiveIds,
+    variantIds: variantIds.length ? variantIds : undefined,
+  };
   const pageQuery = useQuery({
     queryKey: ['runs', 'results', filter, sort, page],
     queryFn: () => api.listRuns({ ...filter, sortBy: sort.by, sortDir: sort.dir, offset: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE }),
@@ -72,6 +82,8 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
   const allRows = allQuery.data?.items ?? [];
   const paramNames = useMemo(() => paramNamesOf(allRows), [allRows]);
   const jobName = (id: string) => jobs.data?.find(j => j.id === id)?.name ?? id;
+  const variantList = variants.data ?? [];
+  const variantLabel = (id: string) => variantList.find(v => v.id === id)?.label ?? id.slice(0, 8);
   const codeHashes = pageQuery.data?.codeHashes ?? {};
   const recordVars = useMemo(() => [...new Set((jobs.data ?? []).flatMap(j => j.config.recordVariables))], [jobs.data]);
   const vars = tsVars ?? recordVars.slice(0, 1);
@@ -80,9 +92,9 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
   const exportCsv = () => {
     // 값과 해시는 반드시 같은 응답에서 가져온다 (두 조회 사이에 코드가 바뀌어도 라벨이 어긋나지 않도록)
     const exportHashes = allQuery.data?.codeHashes ?? {};
-    const header = ['job', 'index', 'status', ...paramNames, ...objectives.map(o => `${o.name}[${(exportHashes[o.id] ?? '').slice(0, 8)}]`)];
+    const header = ['job', 'index', 'status', 'variant', ...paramNames, ...objectives.map(o => `${o.name}[${(exportHashes[o.id] ?? '').slice(0, 8)}]`)];
     const lines = allRows.map(r => csvLine([
-      jobName(r.jobId), r.index, r.status, ...paramNames.map(p => r.params[p]), ...objectives.map(o => r.objectives[o.id]?.value),
+      jobName(r.jobId), r.index, r.status, variantLabel(r.variantId), ...paramNames.map(p => r.params[p]), ...objectives.map(o => r.objectives[o.id]?.value),
     ]));
     download(`${fmu.fileName.replace(/\.fmu$/i, '')}-results.csv`, [csvLine(header), ...lines].join('\n') + '\n');
   };
@@ -106,6 +118,11 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
         <MultiSelect label="잡 필터" placeholder="모든 잡" clearable w={360} value={jobIds}
           onChange={v => { setJobIds(v); setPage(1); }} comboboxProps={{ transitionProps: { duration: 0 } }}
           data={(jobs.data ?? []).map((j: Job) => ({ value: j.id, label: `${j.name} (${j.kind === 'batch' ? '배치' : '최적화'})` }))} />
+        {variantList.length > 1 && (
+          <MultiSelect label="Resource 조합" placeholder="모든 조합" clearable w={360} value={variantIds}
+            onChange={v => { setVariantIds(v); setPage(1); }} comboboxProps={{ transitionProps: { duration: 0 } }}
+            data={variantList.map(v => ({ value: v.id, label: v.label }))} />
+        )}
         <Select label="상태" placeholder="전체" clearable w={140} value={status} data={['ok', 'failed']}
           onChange={v => { setStatus(v as typeof status); setPage(1); }} comboboxProps={{ transitionProps: { duration: 0 } }} />
         <Button variant="default" onClick={exportCsv} disabled={!allQuery.data}>CSV 내보내기</Button>
@@ -122,7 +139,8 @@ function FmuResults({ fmu }: { fmu: FmuSummary }) {
       </Card>
       {pageQuery.isError && <Alert color="red">{(pageQuery.error as Error).message}</Alert>}
       <RunTable rows={pageQuery.data?.items ?? []} paramNames={paramNames} objectives={objectives} codeHashes={codeHashes}
-        sort={sort} onSort={s => { setSort(s); setPage(1); }} selected={selected} onToggle={toggle} showJob={jobName} />
+        sort={sort} onSort={s => { setSort(s); setPage(1); }} selected={selected} onToggle={toggle} showJob={jobName}
+        variantLabel={variantList.length > 1 ? variantLabel : undefined} />
       <Group justify="space-between">
         <Text size="xs" c="dimmed">총 {total.toLocaleString()}개 run</Text>
         <Pagination total={Math.max(1, Math.ceil(total / PAGE_SIZE))} value={page} onChange={setPage} size="sm" />
@@ -243,6 +261,66 @@ function FmuCompare({ fmu }: { fmu: FmuSummary }) {
   );
 }
 
+/** 같은 FMU의 resource 조합끼리 목적함수 분포 비교 */
+function VariantCompare({ fmu }: { fmu: FmuSummary }) {
+  const api = useApi();
+  const [objectiveIds, setObjectiveIds] = useState<string[]>([]);
+  const objectives = useObjectiveMeta(objectiveIds);
+  const variants = useVariants(fmu.id);
+  const runs = useQuery({
+    queryKey: ['runs', 'variant-compare', fmu.id, objectiveIds],
+    queryFn: () => api.listRuns({ fmuId: fmu.id, status: 'ok', objectiveIds, limit: ALL }),
+    enabled: objectiveIds.length > 0,
+  });
+  const rows = runs.data?.items ?? [];
+  const shown = (variants.data ?? []).filter(v => rows.some(r => r.variantId === v.id));
+  const valuesOf = (variantId: string, objectiveId: string) => rows
+    .filter(r => r.variantId === variantId).map(r => r.objectives[objectiveId]?.value).filter((v): v is number => v != null);
+  const option = {
+    animation: false,
+    tooltip: { trigger: 'item' },
+    legend: { top: 0 },
+    grid: { left: 60, right: 20, top: 40, bottom: 60 },
+    xAxis: { type: 'category', data: shown.map(v => v.label), axisLabel: { interval: 0, rotate: shown.length > 4 ? 20 : 0 } },
+    yAxis: { type: 'value', scale: true },
+    series: objectives.map(o => ({ name: o.name, type: 'boxplot', data: shown.map(v => boxStats(valuesOf(v.id, o.id)) ?? []) })),
+  };
+  return (
+    <Stack>
+      <Card withBorder>
+        <Text size="sm" fw={500} mb="xs">비교할 목적함수 (현재 코드로 계산)</Text>
+        <ObjectivePicker value={objectiveIds} onChange={setObjectiveIds} />
+      </Card>
+      {(variants.data?.length ?? 0) <= 1 && <Text size="sm" c="dimmed">resource 후보로 해석한 결과가 아직 없습니다 (원본 조합만 있음)</Text>}
+      {objectives.length > 0 && (
+        <Card withBorder>
+          {runs.isFetching && <Loader size="sm" />}
+          {runs.isError && <Alert color="red">{(runs.error as Error).message}</Alert>}
+          <ReactECharts data-testid="variant-boxplot" option={option} notMerge style={{ height: 360 }} />
+          <Table fz="xs" mt="sm">
+            <Table.Thead>
+              <Table.Tr><Table.Th>Resource 조합</Table.Th><Table.Th>ok run</Table.Th>
+                {objectives.map(o => <Table.Th key={o.id}>{o.name} 중앙값</Table.Th>)}</Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {shown.map(v => (
+                <Table.Tr key={v.id}>
+                  <Table.Td>{v.label}</Table.Td>
+                  <Table.Td>{rows.filter(r => r.variantId === v.id).length}</Table.Td>
+                  {objectives.map(o => {
+                    const st = boxStats(valuesOf(v.id, o.id));
+                    return <Table.Td key={o.id}>{st ? +st[2].toFixed(6) : '-'}</Table.Td>;
+                  })}
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Card>
+      )}
+    </Stack>
+  );
+}
+
 export function ResultsPage() {
   const { fmuId = '' } = useParams();
   const api = useApi();
@@ -256,9 +334,11 @@ export function ResultsPage() {
         <Tabs.List>
           <Tabs.Tab value="results">결과</Tabs.Tab>
           <Tabs.Tab value="compare">FMU 비교</Tabs.Tab>
+          <Tabs.Tab value="variants">Resource 조합 비교</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="results" pt="sm"><FmuResults fmu={fmu.data} /></Tabs.Panel>
         <Tabs.Panel value="compare" pt="sm"><FmuCompare fmu={fmu.data} /></Tabs.Panel>
+        <Tabs.Panel value="variants" pt="sm"><VariantCompare fmu={fmu.data} /></Tabs.Panel>
       </Tabs>
     </Stack>
   );
