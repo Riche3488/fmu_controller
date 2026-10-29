@@ -43,6 +43,13 @@ describe('parsePanels', () => {
     expect(parsePanels(raw).map(p => p.id)).toEqual(['a', 'f', 'h']);
   });
 
+  test('프로토타입 키는 차트 종류가 아니다', () => {
+    const raw = ['toString', 'constructor', '__proto__', 'hasOwnProperty'].map((chart, i) => ({ id: `x${i}`, title: 't', chart }));
+    expect(parsePanels(raw)).toEqual([]);
+    expect(buildChart({ id: 'a', title: 't', chart: 'toString' as never }, { rows: [], objectives: [], params: [], vars: [], jobs: [], variants: [] }, []))
+      .toEqual({ empty: '준비 중' });
+  });
+
   test('알 수 없는 추가 키는 떼어 낸다', () => {
     const [p] = parsePanels([{ id: 'a', title: 't', chart: 'fft', vars: ['v'], junk: 1 }]);
     expect(p).toEqual({ id: 'a', title: 't', chart: 'fft', vars: ['v'] });

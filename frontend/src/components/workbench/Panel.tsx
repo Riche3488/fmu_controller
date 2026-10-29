@@ -42,11 +42,12 @@ export function Panel({ spec, data, loading = false, onEdit, onRemove, onMaximiz
   const chartRef = useRef<ReactECharts>(null);
   const isTs = needsTimeseries(spec.chart);
   const tsRunIds = useMemo(() => timeseriesRunIds(spec, data, selected), [spec, data, selected]);
-  const ts = useTimeseriesData(tsRunIds, isTs ? spec.vars ?? [] : []);
-
   const missing = useMemo(() => missingRefs(spec, {
     params: data.params, objectives: data.objectives.map(o => o.name), vars: data.vars,
   }), [spec, data]);
+  // 찾을 수 없는 변수가 있으면 시계열을 받지 않는다 (어차피 그리지 않음)
+  const ts = useTimeseriesData(tsRunIds, isTs && !missing.length ? spec.vars ?? [] : []);
+  const runIdSet = useMemo(() => new Set(data.rows.map(r => r.id)), [data.rows]);
   const result: ChartResult = useMemo(
     () => buildChart(spec, data, selected, isTs ? ts.data : undefined),
     // ts.data는 매 렌더 새 객체라 실제 내용(로딩 끝난 run 수)으로 비교한다
@@ -55,17 +56,20 @@ export function Panel({ spec, data, loading = false, onEdit, onRemove, onMaximiz
   );
 
   // echarts-for-react는 onEvents 객체가 바뀌면 차트를 다시 만든다 → 한 번만 만들고 최신 값은 ref로 읽는다
-  const latest = useRef({ result, set, toggle });
-  latest.current = { result, set, toggle };
+  const latest = useRef({ result, set, toggle, runIdSet });
+  latest.current = { result, set, toggle, runIdSet };
   const onEvents = useMemo(() => ({
     click: (e: { data?: unknown }) => {
       const id = runIdFromClick(e);
-      if (id) latest.current.toggle(id);
+      if (id && latest.current.runIdSet.has(id)) latest.current.toggle(id);
     },
     brushselected: (e: Parameters<typeof runIdsFromBrush>[1]) => {
       const r = latest.current.result;
-      const ids = isEmptyChart(r) ? undefined : runIdsFromBrush(r as { series?: unknown }, e);
-      if (ids) latest.current.set(ids);
+      const raw = isEmptyChart(r) ? undefined : runIdsFromBrush(r as { series?: unknown }, e);
+      if (!raw) return;
+      const ids = raw.filter(id => latest.current.runIdSet.has(id));
+      // 범주 항목만 잡혔으면 선택을 건드리지 않는다
+      if (ids.length || !raw.length) latest.current.set(ids);
     },
   }), []);
 

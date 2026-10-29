@@ -1,5 +1,5 @@
 // 차트 작업대: 패널 격자 + 툴바(레이아웃·줌 동기화·패널 추가·레이아웃 프리셋) + 선택 연동
-import { Badge, Button, Group, Menu, Modal, SegmentedControl, SimpleGrid, Stack, Switch } from '@mantine/core';
+import { Alert, Badge, Button, Group, Menu, Modal, SegmentedControl, SimpleGrid, Stack, Switch } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import * as echarts from 'echarts';
 import { useContext, useEffect, useId, useMemo, useState } from 'react';
@@ -36,7 +36,9 @@ export function Workbench(props: { fmuId: string; filter: WorkbenchFilter }) {
 function WorkbenchInner({ fmuId, filter }: { fmuId: string; filter: WorkbenchFilter }) {
   const api = useApi();
   const fmu = useQuery({ queryKey: ['fmu', fmuId], queryFn: () => api.getFmu(fmuId) });
-  const { isLoading, ...data } = useWorkbenchData(fmuId, filter);
+  const { isLoading: dataLoading, error, ...data } = useWorkbenchData(fmuId, filter);
+  // 조회가 실패하면 패널이 끝없이 돌지 않게 로딩을 끝낸다 (오류는 위에 따로 보여 준다)
+  const isLoading = dataLoading && !error;
   // 패널 useMemo가 매 렌더 다시 계산하지 않게 데이터 객체를 고정한다
   const stableData = useMemo(() => data, [data.rows, data.objectives, data.params, data.vars, data.jobs, data.variants]); // eslint-disable-line react-hooks/exhaustive-deps
   const { selected, set } = useSelection();
@@ -103,6 +105,7 @@ function WorkbenchInner({ fmuId, filter }: { fmuId: string; filter: WorkbenchFil
           </Group>
         )}
       </Group>
+      {error && <Alert color="red" title="결과 데이터를 불러오지 못했습니다" data-testid="workbench-error">{error.message}</Alert>}
       {preset.notice}
 
       <SimpleGrid cols={dims.cols} spacing="xs" data-testid="workbench-grid" data-cols={dims.cols}>

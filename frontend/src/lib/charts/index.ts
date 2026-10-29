@@ -1,7 +1,8 @@
 // 차트 빌더 레지스트리. 차트 종류별 빌더는 Task 16–19에서 등록한다.
 //
 // run id 계약: 선택 연동(클릭·브러시)이 되는 차트는 series.data의 각 항목을 객체로 두고
-// `id`(권장) 또는 `name`에 run id를 넣는다. Panel이 click/brushselected 이벤트를 이 계약으로 run id에 되돌린다.
+// `id`(권장) 또는 `name`에 run id를 넣는다. Panel이 click/brushselected 이벤트를 이 계약으로 run id에 되돌리고,
+// 지금 데이터의 run id가 아닌 값(막대·박스·히트맵의 범주 이름 등)은 버린다. 그러니 범주 항목은 선택에 들어가지 않는다.
 // 선택된 run 강조는 빌더가 `itemOpacity(runId, selected)`로 itemStyle.opacity를 정한다.
 import type { EChartsOption } from 'echarts';
 import type { Timeseries } from '../../api/types';
@@ -18,7 +19,7 @@ export const CHART_BUILDERS: Partial<Record<ChartKind, ChartBuilder>> = {};
 export const DIM_OPACITY = 0.15;
 
 export function buildChart(spec: PanelSpec, data: WorkbenchData, selected: string[], ts?: Record<string, Timeseries>): ChartResult {
-  const builder = CHART_BUILDERS[spec.chart];
+  const builder = Object.hasOwn(CHART_BUILDERS, spec.chart) ? CHART_BUILDERS[spec.chart] : undefined;
   return builder ? builder(spec, data, selected, ts) : { empty: '준비 중' };
 }
 

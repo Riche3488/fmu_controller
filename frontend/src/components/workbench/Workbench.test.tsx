@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMockClient, MOCK_FMU_ID } from '../../api/mock/mockClient';
@@ -82,6 +82,13 @@ describe('Workbench', () => {
     await userEvent.click(await screen.findByRole('menuitem', { name: '히스토그램' }));
 
     const chart = await within(panels()[0]).findByTestId('panel-chart');
+    // run id가 아닌 이름(범주 항목)은 선택에 들어가지 않는다
+    chart.dataset.pointId = '잡 A';
+    fireEvent.click(chart);
+    await waitFor(() => expect(seen.length).toBeGreaterThan(0));
+    expect(screen.queryByText(/^선택 \d+개$/)).toBeNull();
+    expect(seen.at(-1)).toEqual([]);
+
     chart.dataset.pointId = runIds[1];
     fireEvent.click(chart);
     await waitFor(() => expect(seen.at(-1)).toEqual([runIds[1]]));
@@ -102,5 +109,29 @@ describe('Workbench', () => {
     expect(titles()[0]).toBe('내 차트');
     expect(screen.getAllByLabelText('X축').length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText('색').length).toBeGreaterThan(0);
+  });
+
+  test('결과 조회가 실패하면 오류를 보여 주고 패널은 로딩을 멈춘다', async () => {
+    const client = createMockClient({ tickMs: 5 });
+    client.listRuns = () => Promise.reject(new Error('서버 오류 500'));
+    renderWith(<Workbench fmuId={MOCK_FMU_ID} filter={{}} />, { client });
+    expect(await screen.findByTestId('workbench-error')).toHaveTextContent('서버 오류 500');
+    await waitFor(() => expect(screen.getAllByTestId('panel-empty')).toHaveLength(4));
+  });
+
+  test('찾을 수 없는 변수를 쓰는 시계열 패널은 시계열을 받지 않는다', async () => {
+    const client = createMockClient({ tickMs: 5 });
+    await finishedBatch(client);
+    const spy = vi.spyOn(client, 'getTimeseries');
+    await client.createPreset({
+      name: '남의 시계열', kind: 'dashboard', sourceFmuId: 'other-fmu',
+      config: { layout: '1x1', syncTimeZoom: true, panels: [{ id: 'a', title: 'T', chart: 'tsOverlay', vars: ['other.x'] }] },
+    });
+    renderWith(<Workbench fmuId={MOCK_FMU_ID} filter={{}} />, { client });
+    await waitFor(() => expect(panels()).toHaveLength(4));
+    await userEvent.click(screen.getByRole('button', { name: '불러오기' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: /남의 시계열/ }));
+    expect(await screen.findByTestId('panel-missing')).toHaveTextContent('찾을 수 없음: other.x');
+    expect(spy).not.toHaveBeenCalled();
   });
 });

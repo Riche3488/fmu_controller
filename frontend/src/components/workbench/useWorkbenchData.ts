@@ -17,7 +17,7 @@ function jobParamNames(j: Job): string[] {
     : (j.config as OptimizationRequest).designVars.map(d => d.name);
 }
 
-export function useWorkbenchData(fmuId: string, filter: WorkbenchFilter): WorkbenchData & { isLoading: boolean } {
+export function useWorkbenchData(fmuId: string, filter: WorkbenchFilter): WorkbenchData & { isLoading: boolean; error: Error | null } {
   const api = useApi();
   const objectiveList = useQuery({ queryKey: ['objectives'], queryFn: () => api.listObjectives() });
   const objectiveIds = (objectiveList.data ?? []).map(o => o.id);
@@ -33,10 +33,13 @@ export function useWorkbenchData(fmuId: string, filter: WorkbenchFilter): Workbe
     enabled: objectiveList.isSuccess,
   });
 
+  // 호출자가 매 렌더 새 배열을 넘겨도 패널을 다시 만들지 않게 문자열로 비교한다
+  const jobKey = filter.jobIds?.join(',') ?? '';
   const jobs = useMemo(() => {
     const all = jobsQuery.data ?? [];
-    return filter.jobIds?.length ? all.filter(j => filter.jobIds!.includes(j.id)) : all;
-  }, [jobsQuery.data, filter.jobIds]);
+    const ids = jobKey ? jobKey.split(',') : [];
+    return ids.length ? all.filter(j => ids.includes(j.id)) : all;
+  }, [jobsQuery.data, jobKey]);
   const recordVars = useMemo(() => [...new Set(jobs.flatMap(j => j.config.recordVariables))], [jobs]);
   // 기록 변수를 알 수 없으면(잡 없음) FMU 출력 변수 전체
   const outputs = useQuery({
@@ -56,6 +59,7 @@ export function useWorkbenchData(fmuId: string, filter: WorkbenchFilter): Workbe
 
   return {
     rows, objectives, params, vars, jobs, variants: variants.data ?? NO_VARIANTS,
+    error: (objectiveList.error ?? runs.error ?? jobsQuery.error ?? outputs.error) as Error | null,
     isLoading: !runs.isFetched || !jobsQuery.isFetched || (recordVars.length === 0 && !outputs.isFetched),
   };
 }

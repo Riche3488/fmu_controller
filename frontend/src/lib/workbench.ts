@@ -56,6 +56,11 @@ export const CHART_SLOTS: Record<ChartKind, Slot[]> = {
   tsSubplots: ['vars'], tsOverlay: ['vars', 'color'], tsBand: ['vars'], tsDiff: ['vars', 'refRunId'], phase: ['vars'], fft: ['vars'],
 };
 
+/** JSON에서 온 문자열이 차트 종류인지 ('toString' 같은 프로토타입 키는 아님) */
+export function isChartKind(v: unknown): v is ChartKind {
+  return typeof v === 'string' && Object.hasOwn(CHART_LABELS, v);
+}
+
 const TS_CHARTS = new Set<ChartKind>(['tsSubplots', 'tsOverlay', 'tsBand', 'tsDiff', 'phase', 'fft']);
 /** 시계열(getTimeseries)이 필요한 차트 */
 export function needsTimeseries(kind: ChartKind): boolean {
@@ -131,7 +136,7 @@ export function parsePanels(raw: unknown[]): PanelSpec[] {
   const ids = new Set<string>();
   for (const item of raw) {
     if (!isObj(item) || typeof item.id !== 'string' || typeof item.title !== 'string') continue;
-    if (typeof item.chart !== 'string' || !(item.chart in CHART_LABELS) || ids.has(item.id)) continue;
+    if (!isChartKind(item.chart) || ids.has(item.id)) continue;
     const p: Record<string, unknown> = { id: item.id, title: item.title, chart: item.chart };
     let ok = true;
     for (const [key, check] of Object.entries(CHECKS)) {

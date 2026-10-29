@@ -1,7 +1,7 @@
 // 패널 편집 드로어: 제목·차트 종류·필드 매핑. 바꾸는 즉시 패널에 반영한다.
 import { Drawer, MultiSelect, SegmentedControl, Select, Stack, Switch, Text, TextInput } from '@mantine/core';
 import {
-  CHART_GROUPS, CHART_LABELS, CHART_SLOTS, parseRefKey, refKey, type ChartKind, type FieldRef, type GroupRef, type PanelSpec,
+  CHART_GROUPS, CHART_LABELS, CHART_SLOTS, isChartKind, parseRefKey, refKey, type ChartKind, type FieldRef, type GroupRef, type PanelSpec,
   type WorkbenchData,
 } from '../../lib/workbench';
 
@@ -32,7 +32,7 @@ export function PanelEditor({ spec, data, onChange, onClose }: {
     { group: '파라미터', items: data.params.map(p => ({ value: refKey({ kind: 'param', name: p }), label: p })) },
     { group: '목적함수', items: data.objectives.map(o => ({ value: refKey({ kind: 'objective', name: o.name }), label: o.name })) },
   ];
-  const slots = spec ? CHART_SLOTS[spec.chart] : [];
+  const slots = spec && isChartKind(spec.chart) ? CHART_SLOTS[spec.chart] : [];
   const patch = (p: Partial<PanelSpec>) => {
     if (!spec) return;
     const next = { ...spec, ...p } as Record<string, unknown>;
