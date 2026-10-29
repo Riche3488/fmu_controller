@@ -96,14 +96,14 @@ describe('ref keys', () => {
 describe('chart registry', () => {
   const data = { rows: [], objectives: [], params: [], vars: [], jobs: [], variants: [] };
   test('등록 안 된 종류는 준비 중', () => {
-    expect(buildChart({ id: 'a', title: 't', chart: 'convergence' }, data, [])).toEqual({ empty: '준비 중' });
+    expect(buildChart({ id: 'a', title: 't', chart: 'fft' }, data, [])).toEqual({ empty: '준비 중' });
   });
   test('등록된 빌더를 부른다', () => {
-    CHART_BUILDERS.convergence = (_s, _d, sel) => ({ title: { text: sel.join(',') } });
+    CHART_BUILDERS.fft = (_s, _d, sel) => ({ title: { text: sel.join(',') } });
     try {
-      expect(buildChart({ id: 'a', title: 't', chart: 'convergence' }, data, ['r1'])).toEqual({ title: { text: 'r1' } });
+      expect(buildChart({ id: 'a', title: 't', chart: 'fft' }, data, ['r1'])).toEqual({ title: { text: 'r1' } });
     } finally {
-      delete CHART_BUILDERS.convergence;
+      delete CHART_BUILDERS.fft;
     }
   });
   test('선택이 없으면 모두 불투명, 있으면 나머지는 흐리게', () => {

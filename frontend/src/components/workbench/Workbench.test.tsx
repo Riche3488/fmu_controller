@@ -52,7 +52,7 @@ describe('Workbench', () => {
       name: '남의 대시보드', kind: 'dashboard', sourceFmuId: 'other-fmu', config: {
         layout: '1x2', syncTimeZoom: false, panels: [
           { id: 'a', title: '남의 시계열', chart: 'tsSubplots', vars: ['other.speed', 'other.torque'] },
-          { id: 'b', title: '멀쩡한 패널', chart: 'convergence' },
+          { id: 'b', title: '멀쩡한 패널', chart: 'fft' },
           { id: 'c', title: 'broken', chart: 'nope' },
         ],
       },
