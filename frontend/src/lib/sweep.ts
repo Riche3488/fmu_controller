@@ -43,3 +43,11 @@ export function previewCases(
   }
   return out;
 }
+
+/** 파라미터 기본 범위: start×0.5 ~ start×1.5 (start=0이면 -1 ~ 1) */
+export function defaultBounds(start: unknown): { min: number; max: number } {
+  const s = typeof start === 'number' ? start : 0;
+  if (s === 0) return { min: -1, max: 1 };
+  const [a, b] = [s * 0.5, s * 1.5];
+  return { min: Math.min(a, b), max: Math.max(a, b) };
+}

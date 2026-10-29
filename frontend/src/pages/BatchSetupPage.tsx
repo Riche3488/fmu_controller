@@ -8,7 +8,7 @@ import { useApi } from '../api/client';
 import type { Sampling, SweepParam, Variable } from '../api/types';
 import { RunSettingsSection, useRunSettings } from '../components/RunSettingsSection';
 import { VariablePicker } from '../components/VariablePicker';
-import { countCases, previewCases } from '../lib/sweep';
+import { countCases, defaultBounds, previewCases } from '../lib/sweep';
 
 const CONFIRM_THRESHOLD = 1000;
 
@@ -29,10 +29,7 @@ function toSweep(r: Row): SweepParam | null {
 
 function newRow(v: Variable): Row {
   const start = typeof v.start === 'number' ? v.start : 0;
-  return {
-    name: v.name, mode: 'list', text: String(start),
-    min: start === 0 ? -1 : start * 0.5, max: start === 0 ? 1 : start * 1.5, steps: 3,
-  };
+  return { name: v.name, mode: 'list', text: String(start), ...defaultBounds(v.start), steps: 3 };
 }
 
 export function BatchSetupPage() {

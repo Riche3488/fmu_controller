@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { countCases, expandValues, previewCases } from './sweep';
+import { countCases, defaultBounds, expandValues, previewCases } from './sweep';
 import type { SweepParam } from '../api/types';
 
 const listA3: SweepParam = { name: 'a', mode: 'list', values: [1, 2, 3] };
@@ -48,5 +48,14 @@ describe('sweep', () => {
   test('previewCases zip and lhs', () => {
     expect(previewCases([listA3, listB3], 'zip', null)).toEqual([{ a: 1, b: 10 }, { a: 2, b: 20 }, { a: 3, b: 30 }]);
     expect(previewCases([rangeA], 'lhs', 50)).toEqual([]);
+  });
+});
+
+describe('defaultBounds', () => {
+  test('scales start, handles zero and negative', () => {
+    expect(defaultBounds(45)).toEqual({ min: 22.5, max: 67.5 });
+    expect(defaultBounds(0)).toEqual({ min: -1, max: 1 });
+    expect(defaultBounds(-2)).toEqual({ min: -3, max: -1 });
+    expect(defaultBounds(true)).toEqual({ min: -1, max: 1 });
   });
 });
