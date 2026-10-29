@@ -1,7 +1,10 @@
 """uvicorn 실행: uvicorn --factory app.main:create_app --host 127.0.0.1 --port 8000"""
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import Settings
 from .db import init_db, make_engine, make_session_factory
@@ -46,5 +49,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health():
         return Health(status="ok", parallel_backend=app.state.executor.name)
 
+    mount_frontend(app, settings.static_dir)
     return app
+
+
+def mount_frontend(app: FastAPI, static_dir: Path) -> None:
+    """빌드된 SPA 서빙: /assets 정적 파일 + 그 외 비 /api 경로는 index.html (클라이언트 라우팅)."""
+    index = static_dir / "index.html"
+    if not index.exists():
+        return
+    if (static_dir / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa(path: str):
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(404, "Not Found")
+        f = static_dir / path
+        if path and f.is_file() and f.resolve().is_relative_to(static_dir.resolve()):
+            return FileResponse(f)
+        return FileResponse(index)
 

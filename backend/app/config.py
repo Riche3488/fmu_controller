@@ -6,6 +6,7 @@ from typing import Literal
 ParallelMode = Literal["auto", "ray", "pool"]
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+DEFAULT_STATIC_DIR = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 SUBDIRS = ("fmus", "extract", "results", "objectives", "work")
 
 
@@ -20,6 +21,8 @@ class Settings:
     data_dir: Path = DEFAULT_DATA_DIR
     parallel: ParallelMode = "auto"
     max_workers: int = field(default_factory=_default_workers)
+    # 빌드된 프론트엔드 (없으면 API만 제공)
+    static_dir: Path = DEFAULT_STATIC_DIR
 
     def __post_init__(self):
         object.__setattr__(self, "data_dir", Path(self.data_dir).resolve())
@@ -37,6 +40,8 @@ class Settings:
             kwargs["parallel"] = v
         if v := os.environ.get("FMUC_MAX_WORKERS"):
             kwargs["max_workers"] = int(v)
+        if v := os.environ.get("FMUC_STATIC_DIR"):
+            kwargs["static_dir"] = Path(v)
         return cls(**kwargs)
 
     @property
