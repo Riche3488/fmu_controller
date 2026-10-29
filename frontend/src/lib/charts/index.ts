@@ -8,6 +8,7 @@ import type { EChartsOption } from 'echarts';
 import type { Timeseries } from '../../api/types';
 import type { ChartKind, PanelSpec, WorkbenchData } from '../workbench';
 import { SCALAR_BUILDERS } from './scalar';
+import { SURFACE_BUILDERS } from './surface';
 
 export type { WorkbenchData } from '../workbench';
 
@@ -19,6 +20,7 @@ export { DIM_OPACITY, itemOpacity } from './common';
 
 export const CHART_BUILDERS: Partial<Record<ChartKind, ChartBuilder>> = {
   ...SCALAR_BUILDERS,
+  ...SURFACE_BUILDERS,
 };
 
 export function buildChart(spec: PanelSpec, data: WorkbenchData, selected: string[], ts?: Record<string, Timeseries>): ChartResult {

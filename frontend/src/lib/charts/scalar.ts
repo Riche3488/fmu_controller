@@ -4,7 +4,7 @@ import type { RunRow } from '../../api/types';
 import { boxStats } from '../stats';
 import { corrMatrix, histogram, kde } from '../vizStats';
 import type { FieldRef, GroupRef, PanelSpec, WorkbenchData } from '../workbench';
-import { itemOpacity } from './common';
+import { completeRows, itemOpacity, maxOf, minOf, num } from './common';
 import { fieldValue } from './fields';
 import type { ChartBuilder, ChartResult } from './index';
 
@@ -19,9 +19,6 @@ type CustomApi = {
   value: (i: number) => unknown; coord: (p: number[]) => number[]; size: (p: number[]) => number[]; style: (o: Opt) => Opt;
 };
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
-const minOf = (xs: number[]) => xs.reduce((a, b) => Math.min(a, b), Infinity);
-const maxOf = (xs: number[]) => xs.reduce((a, b) => Math.max(a, b), -Infinity);
-const num = (x: number) => Math.round(x * 1e6) / 1e6;
 
 function hexToRgb(h: string): number[] {
   return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -41,16 +38,6 @@ function groupKey(row: RunRow, by: 'job' | 'variant'): string {
 }
 function groupLabel(key: string, by: 'job' | 'variant', data: WorkbenchData): string {
   return (by === 'job' ? data.jobs.find(j => j.id === key)?.name : data.variants.find(v => v.id === key)?.label) ?? key;
-}
-
-/** 모든 필드 값이 있는 행만 (필드 하나라도 null이면 제외) */
-function completeRows(data: WorkbenchData, refs: FieldRef[]): { row: RunRow; v: number[] }[] {
-  const out: { row: RunRow; v: number[] }[] = [];
-  for (const row of data.rows) {
-    const v = refs.map(r => fieldValue(row, r, data.objectives));
-    if (v.every((x): x is number => x !== null)) out.push({ row, v });
-  }
-  return out;
 }
 
 /** 색 필드(값 → 램프) 또는 그룹(→ 팔레트)에 따른 행 색. 색 지정이 없으면 undefined. */
