@@ -144,9 +144,9 @@ def test_snapshot_used_even_if_edited_midrun(mclient):  # noqa: F811
 
 def test_no_objective_values_in_db(mclient):  # noqa: F811
     insp = inspect(mclient.app.state.engine)
-    assert set(insp.get_table_names()) == {"fmus", "variables", "objectives", "jobs", "runs"}
+    assert set(insp.get_table_names()) == {"fmus", "variables", "objectives", "jobs", "runs", "resource_files", "resource_candidates", "variants"}
     assert {c["name"] for c in insp.get_columns("runs")} == {
-        "id", "job_id", "fmu_id", "index", "params", "status", "error", "elapsed_sec", "result_path"}
+        "id", "job_id", "fmu_id", "index", "params", "status", "error", "elapsed_sec", "result_path", "variant_id"}
     with mclient.app.state.session_factory() as s:
         from app.models import Job
         for j in s.query(Job).filter(Job.kind == "optimization"):

@@ -19,9 +19,9 @@ def test_settings_rejects_non_ascii_data_dir():
 
 def test_tables_created_without_objective_value_storage(app, client):
     insp = inspect(app.state.engine)
-    assert set(insp.get_table_names()) == {"fmus", "variables", "objectives", "jobs", "runs"}
+    assert set(insp.get_table_names()) == {"fmus", "variables", "objectives", "jobs", "runs", "resource_files", "resource_candidates", "variants"}
     runs_cols = {c["name"] for c in insp.get_columns("runs")}
-    assert runs_cols == {"id", "job_id", "fmu_id", "index", "params", "status", "error", "elapsed_sec", "result_path"}
+    assert runs_cols == {"id", "job_id", "fmu_id", "index", "params", "status", "error", "elapsed_sec", "result_path", "variant_id"}
     objective_cols = {c["name"] for c in insp.get_columns("objectives")}
     assert objective_cols == {"id", "name", "code_hash", "updated_at"}
 

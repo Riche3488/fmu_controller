@@ -12,7 +12,8 @@ from sqlalchemy import func, insert, or_, select, text
 from sqlalchemy.orm import Session
 
 from ..config import Settings
-from ..models import Fmu, Run, Variable
+from ..models import Fmu, ResourceCandidate, ResourceFile, Run, Variable, Variant
+from ..resources import catalog
 
 INVALID_FMU = "유효한 FMU 파일이 아닙니다"
 CHUNK = 1 << 20
@@ -112,7 +113,7 @@ def register_fmu(session: Session, src: BinaryIO, file_name: str, settings: Sett
             }
             for v in variables
         ])
-        session.commit()
+        catalog.index_resources(session, fmu_id, extract_dir)  # commit 포함
         return fmu, True
     finally:
         tmp_path.unlink(missing_ok=True)
@@ -135,8 +136,13 @@ def query_variables(session: Session, fmu_id: str, q: str, causality: str | None
 
 
 def delete_fmu(session: Session, fmu: Fmu, settings: Settings) -> None:
-    session.query(Variable).filter(Variable.fmu_id == fmu.id).delete()
+    variant_ids = list(session.scalars(select(Variant.id).where(Variant.fmu_id == fmu.id)))
+    for model in (Variant, ResourceCandidate, ResourceFile, Variable):
+        session.query(model).filter(model.fmu_id == fmu.id).delete()
     session.delete(fmu)
     session.commit()
     fmu_file(settings, fmu.id).unlink(missing_ok=True)
     shutil.rmtree(get_extract_dir(settings, fmu.id), ignore_errors=True)
+    shutil.rmtree(settings.data_dir / "resources" / fmu.id, ignore_errors=True)
+    for vid in variant_ids:
+        shutil.rmtree(settings.data_dir / "variants" / vid, ignore_errors=True)

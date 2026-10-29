@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import JSON, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import JSON, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -81,3 +81,38 @@ class Run(Base):
     error: Mapped[str | None] = mapped_column(Text)
     elapsed_sec: Mapped[float] = mapped_column(Float, default=0.0)
     result_path: Mapped[str | None]
+    # Resource 조합 (이전 DB 마이그레이션 때문에 nullable이지만 항상 채운다)
+    variant_id: Mapped[str | None] = mapped_column(String(16), index=True)
+
+
+class ResourceFile(Base):
+    """FMU resources/ 아래 파일 (path는 resources/ 기준 상대경로, '/' 구분)."""
+    __tablename__ = "resource_files"
+    fmu_id: Mapped[str] = mapped_column(ForeignKey("fmus.id", ondelete="CASCADE"), primary_key=True)
+    path: Mapped[str] = mapped_column(primary_key=True)
+    size: Mapped[int]
+    sha256: Mapped[str] = mapped_column(String(64))
+
+
+class ResourceCandidate(Base):
+    """resource 파일 자리에 넣을 수 있는 파일 내용. 원본도 후보 하나(is_original)."""
+    __tablename__ = "resource_candidates"
+    id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    fmu_id: Mapped[str] = mapped_column(ForeignKey("fmus.id", ondelete="CASCADE"), index=True)
+    path: Mapped[str]
+    name: Mapped[str]
+    sha256: Mapped[str] = mapped_column(String(64))
+    size: Mapped[int]
+    is_original: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    __table_args__ = (UniqueConstraint("fmu_id", "path", "sha256"),)
+
+
+class Variant(Base):
+    """Resource 조합: FMU + 원본이 아닌 후보로 바꾼 파일들 (assignment: path -> 후보 id)."""
+    __tablename__ = "variants"
+    id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    fmu_id: Mapped[str] = mapped_column(ForeignKey("fmus.id", ondelete="CASCADE"), index=True)
+    assignment: Mapped[dict[str, Any]]
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)

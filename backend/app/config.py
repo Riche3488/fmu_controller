@@ -7,7 +7,7 @@ ParallelMode = Literal["auto", "ray", "pool"]
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 DEFAULT_STATIC_DIR = Path(__file__).resolve().parents[2] / "frontend" / "dist"
-SUBDIRS = ("fmus", "extract", "results", "objectives", "work")
+SUBDIRS = ("fmus", "extract", "results", "objectives", "work", "resources", "variants")
 
 
 def _default_workers() -> int:

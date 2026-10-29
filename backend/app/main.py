@@ -14,6 +14,7 @@ from .db import init_db, make_engine, make_session_factory
 from .parallel.base import create_executors
 from .jobs.runner import JobManager, mark_interrupted_jobs
 from .objectives.evaluator import Evaluator
+from .resources.migrate import migrate
 from .routers import fmus, jobs, objectives, runs
 from .schemas import Health
 
@@ -29,6 +30,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.settings = settings
         app.state.engine = engine
         app.state.session_factory = make_session_factory(engine)
+        migrate(engine, app.state.session_factory, settings)
         with app.state.session_factory() as s:
             mark_interrupted_jobs(s)
         executor, eval_executor = create_executors(settings.parallel, settings.max_workers, settings.eval_workers)
