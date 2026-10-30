@@ -173,4 +173,50 @@ describe('ObjectiveDesigner', () => {
     expect(await screen.findByTestId('batch-histogram')).toBeInTheDocument();
     expect(screen.getByText(/1개 run 중/)).toBeInTheDocument();
   });
+
+  test('미리보기 시계열은 서버 상한(200000점)으로 받는다', async () => {
+    const client = await seededClient();
+    const spy = vi.spyOn(client, 'getTimeseries');
+    renderDesigner(generateCode(DEFAULT_SPEC), client);
+    await screen.findByTestId('builder-value');
+    expect(spy).toHaveBeenCalled();
+    expect(spy.mock.calls.every(([, , n]) => n === 200000)).toBe(true);
+    expect(screen.queryByTestId('preview-downsampled')).not.toBeInTheDocument();
+  });
+
+  test('받은 시계열이 상한만큼이면 줄인 데이터 안내', async () => {
+    const client = await seededClient();
+    const N = 200000;
+    const time = Array.from({ length: N }, (_, i) => i * 0.007);
+    client.getTimeseries = async (_id, vars) => ({ time, series: Object.fromEntries(vars.map(v => [v, time])) });
+    renderDesigner(generateCode(DEFAULT_SPEC), client);
+    expect(await screen.findByTestId('preview-downsampled'))
+      .toHaveTextContent('미리보기는 200000점으로 줄인 데이터 기준입니다 — 저장된 값과 다를 수 있습니다');
+  });
+
+  test('코드 모드: 테스트 실행은 고른 미리보기 run으로 testObjective를 부르고 값을 보여 준다', async () => {
+    const client = await seededClient();
+    const runId = (await client.listRuns({ status: 'ok' })).items[0].id;
+    const spy = vi.spyOn(client, 'testObjective').mockResolvedValue({ value: 42.5, error: null, stdout: 'hi', durationMs: 3 });
+    const code = 'def evaluate(result, params):\n    return 42.5\n';
+    renderDesigner(code, client);
+    const btn = await screen.findByRole('button', { name: '테스트 실행' });
+    await waitFor(() => expect(btn).toBeEnabled());
+    await userEvent.click(btn);
+    expect(spy).toHaveBeenCalledWith({ code, runId });
+    const v = await screen.findByTestId('test-value');
+    expect(v).toHaveTextContent('42.5');
+    expect(v).toHaveClass('fmuc-num');
+    expect(screen.getByText('hi')).toBeInTheDocument();
+  });
+
+  test('일괄 적용 결과는 코드가 바뀌면 사라진다', async () => {
+    const client = await seededClient();
+    renderDesigner(generateCode(EXAMPLE), client);
+    await userEvent.click(await screen.findByRole('button', { name: '여러 run에 일괄 적용' }));
+    expect(await screen.findByTestId('batch-histogram')).toBeInTheDocument();
+    await setNumber('트리거 1 임계값', '0.5');
+    expect(screen.queryByTestId('batch-histogram')).not.toBeInTheDocument();
+    expect(screen.queryByText(/1개 run 중/)).not.toBeInTheDocument();
+  });
 });

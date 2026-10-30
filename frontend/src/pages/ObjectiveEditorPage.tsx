@@ -1,5 +1,5 @@
 import {
-  Alert, Button, Card, Code, Grid, Group, Modal, NavLink, ScrollArea, Select, Stack, Text, TextInput, Title,
+  Alert, Button, Card, Grid, Group, Modal, NavLink, ScrollArea, Select, Stack, Text, TextInput, Title, useComputedColorScheme,
 } from '@mantine/core';
 import Editor from '@monaco-editor/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { SAVE_NOTE } from '../lib/objectiveText';
 import { useSaveShortcut } from '../components/useSaveShortcut';
 import { CodeHashBadge } from '../components/CodeHashBadge';
 import { ObjectiveDesigner } from '../components/objective/ObjectiveDesigner';
+import { TestResultView } from '../components/objective/TestResultView';
 import { generateCode, parseBuilderCode } from '../lib/builder/codegen';
 import { DEFAULT_SPEC } from '../lib/builder/spec';
 
@@ -67,20 +68,7 @@ function TestPanel({ code }: { code: string }) {
         nothingFoundMessage="성공한 run이 없습니다" comboboxProps={{ transitionProps: { duration: 0 } }} />
       <Button onClick={() => test.mutate()} disabled={!runId} loading={test.isPending}>테스트 실행</Button>
       {test.isError && <Alert color="red">{(test.error as Error).message}</Alert>}
-      {result && (result.error ? (
-        <Alert color="red" title="오류"><Text size="xs" ff="monospace" style={{ whiteSpace: 'pre-wrap' }}>{result.error}</Text></Alert>
-      ) : (
-        <Card withBorder>
-          <Text size="xs" c="dimmed">값 ({result.durationMs} ms)</Text>
-          <Text fw={700} size="lg" data-testid="test-value">{result.value === null ? 'null' : result.value}</Text>
-        </Card>
-      ))}
-      {result?.stdout && (
-        <div>
-          <Text size="xs" c="dimmed">stdout</Text>
-          <Code block>{result.stdout}</Code>
-        </div>
-      )}
+      {result && <TestResultView result={result} />}
       {job.data && (
         <div>
           <Text size="xs" c="dimmed">이 run에 기록된 컬럼 (result DataFrame)</Text>
@@ -103,6 +91,7 @@ export function ObjectiveEditorPage() {
   const [pendingNav, setPendingNav] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ name: string; code: string } | null>(null);
   const [pickedFmu, setPickedFmu] = useState<string | null>(null);
+  const colorScheme = useComputedColorScheme('dark');
   const fmus = useQuery({ queryKey: ['fmus'], queryFn: () => api.listFmus() });
   const designerFmu = pickedFmu ?? fmus.data?.[0]?.id ?? null;
 
@@ -180,7 +169,7 @@ export function ObjectiveEditorPage() {
                 </Stack>
               ) : (
                 <Card withBorder p={0}>
-                  <Editor height="60vh" language="python" value={draft.code}
+                  <Editor height="60vh" language="python" value={draft.code} theme={colorScheme === 'dark' ? 'vs-dark' : 'light'}
                     onChange={v => setDraft(d => (d ? { ...d, code: v ?? '' } : d))}
                     onMount={(editor, monaco) => {
                       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, saveNow);

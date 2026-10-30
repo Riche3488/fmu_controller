@@ -1,7 +1,9 @@
 // 목적함수 설계기: 블록 빌더 + 실제 run 미리보기 + 호환성 + 일괄 적용 + 생성 코드
-import { Alert, Badge, Button, Card, Collapse, Grid, Group, Modal, Select, SimpleGrid, Stack, Text } from '@mantine/core';
+import {
+  Alert, Badge, Button, Card, Collapse, Grid, Group, Modal, Select, SimpleGrid, Stack, Text, useComputedColorScheme,
+} from '@mantine/core';
 import Editor from '@monaco-editor/react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApi } from '../../api/client';
 import type { Job } from '../../api/types';
@@ -15,6 +17,7 @@ import type { SignalGroups } from './builderFields';
 import { CompatBox } from './CompatBox';
 import { PreviewCharts } from './PreviewCharts';
 import { evaluatePreview } from './previewEval';
+import { TestResultView } from './TestResultView';
 import { TrialRunButton } from './TrialRunButton';
 
 type Value = { name: string; code: string };
@@ -40,6 +43,9 @@ const recordedOf = (job: Job | undefined, outputs: string[]) =>
 
 const fmtValue = (v: number) => String(Number(v.toPrecision(6)));
 
+// 미리보기는 서버 상한만큼 받는다. 더 길면 줄인 데이터라 저장된 값과 다를 수 있다.
+const PREVIEW_MAX_POINTS = 200000;
+
 export function ObjectiveDesigner({ fmuId, value, onChange }: {
   fmuId: string; value: Value; onChange: (v: Value) => void;
 }) {
@@ -50,6 +56,7 @@ export function ObjectiveDesigner({ fmuId, value, onChange }: {
   const [pickedRunId, setPickedRunId] = useState<string | null>(null);
   const [codeOpen, setCodeOpen] = useState(false);
   const [revertOpen, setRevertOpen] = useState(false);
+  const colorScheme = useComputedColorScheme('dark');
 
   // 부모가 다른 코드를 넣으면(다른 목적함수를 불러옴 등) 다시 판정한다. 우리가 낸 코드는 무시.
   const emitted = useRef(value.code);
@@ -100,10 +107,18 @@ export function ObjectiveDesigner({ fmuId, value, onChange }: {
   const needTrial = runs.isSuccess && jobs.isSuccess && !runItems.some(r => okJobIds.has(r.jobId));
 
   const ts = useQuery({
-    queryKey: ['timeseries', previewRun?.id, fetchVars],
-    queryFn: () => api.getTimeseries(previewRun!.id, fetchVars, 2000),
+    // 작업대(2000점)와 캐시를 섞지 않게 점 수를 키에 넣는다
+    queryKey: ['timeseries', previewRun?.id, fetchVars, PREVIEW_MAX_POINTS],
+    queryFn: () => api.getTimeseries(previewRun!.id, fetchVars, PREVIEW_MAX_POINTS),
     enabled: mode === 'builder' && !!previewRun && !!previewJob,
   });
+  const downsampled = !!ts.data && ts.data.time.length >= PREVIEW_MAX_POINTS;
+
+  // 코드 모드: 고른 run에 서버에서 실제로 실행해 본다. 결과는 그 코드·run일 때만 보여 준다.
+  const codeTest = useMutation({
+    mutationFn: (req: { code: string; runId: string }) => api.testObjective(req),
+  });
+  const codeTestCurrent = codeTest.variables?.code === value.code && codeTest.variables?.runId === previewRun?.id;
   const preview = useMemo(
     () => (mode === 'builder' && ts.data && previewRun ? evaluatePreview(spec, ts.data, recorded, previewRun.params) : null),
     [mode, spec, ts.data, previewRun, recorded.join('\n')], // eslint-disable-line react-hooks/exhaustive-deps
@@ -140,7 +155,17 @@ export function ObjectiveDesigner({ fmuId, value, onChange }: {
           value={previewRun?.id ?? null} onChange={id => id && setPickedRunId(id)} allowDeselect={false}
         />
         {needTrial && <TrialRunButton fmuId={fmuId} columns={columns} onDone={id => setPickedRunId(id)} />}
+        {mode === 'code' && (
+          <Button variant="light" disabled={!previewRun || !value.code.trim()} loading={codeTest.isPending && codeTestCurrent}
+            onClick={() => previewRun && codeTest.mutate({ code: value.code, runId: previewRun.id })}>
+            테스트 실행
+          </Button>
+        )}
       </Group>
+      {mode === 'code' && codeTestCurrent && codeTest.isError && (
+        <Alert color="red" variant="light">{(codeTest.error as Error).message}</Alert>
+      )}
+      {mode === 'code' && codeTestCurrent && codeTest.data && <TestResultView result={codeTest.data} />}
       {mode === 'builder' && (
         <>
           {preview?.error && <Alert color="red" variant="light">{preview.error}</Alert>}
@@ -148,6 +173,11 @@ export function ObjectiveDesigner({ fmuId, value, onChange }: {
             <Text className="fmuc-num" fz={32} fw={500} data-testid="builder-value">{fmtValue(preview.value)}</Text>
           )}
           {ts.isError && <Alert color="red" variant="light">{(ts.error as Error).message}</Alert>}
+          {downsampled && (
+            <Text size="xs" c="orange" data-testid="preview-downsampled">
+              {`미리보기는 ${PREVIEW_MAX_POINTS}점으로 줄인 데이터 기준입니다 — 저장된 값과 다를 수 있습니다`}
+            </Text>
+          )}
           <Group gap={4}>
             <Text size="xs" c="dimmed">필요한 컬럼</Text>
             {required.length === 0 && <Text size="xs" c="dimmed">없음</Text>}
@@ -210,7 +240,7 @@ export function ObjectiveDesigner({ fmuId, value, onChange }: {
         <Collapse in={mode === 'code' || codeOpen}>
           <div style={{ marginTop: 8 }}>
             <Editor
-              height="50vh" language="python" value={value.code}
+              height="50vh" language="python" value={value.code} theme={colorScheme === 'dark' ? 'vs-dark' : 'light'}
               options={{ readOnly: mode === 'builder', minimap: { enabled: false }, automaticLayout: true }}
               onChange={v => mode === 'code' && emit(v ?? '')}
             />

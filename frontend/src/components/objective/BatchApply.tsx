@@ -28,25 +28,27 @@ export function BatchApply({ code, fmuId }: { code: string; fmuId: string }) {
   const api = useApi();
   const theme = useEchartsTheme();
   const apply = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (c: string) => {
       const runs = await recentOkRuns(api, fmuId);
       if (!runs.length) return { runs, results: {} as Record<string, ObjectiveTestResult> };
-      const { results } = await api.testObjectiveBatch({ code, runIds: runs.map(r => r.run.id) });
+      const { results } = await api.testObjectiveBatch({ code: c, runIds: runs.map(r => r.run.id) });
       return { runs, results };
     },
   });
 
-  const data = apply.data;
+  // 결과는 그 결과를 낸 코드일 때만 보여 준다 (코드를 고치면 이전 결과는 사라진다)
+  const current = apply.variables === code;
+  const data = current ? apply.data : undefined;
   const values = data ? data.runs.map(r => data.results[r.run.id]?.value).filter((v): v is number => typeof v === 'number') : [];
   const errors = data ? data.runs.filter(r => data.results[r.run.id]?.error) : [];
   const h = histogram(values);
 
   return (
     <Stack gap="xs">
-      <Button variant="light" onClick={() => apply.mutate()} loading={apply.isPending} disabled={!code.trim()}>
+      <Button variant="light" onClick={() => apply.mutate(code)} loading={apply.isPending && current} disabled={!code.trim()}>
         여러 run에 일괄 적용
       </Button>
-      {apply.isError && <Text size="sm" c="red">{(apply.error as Error).message}</Text>}
+      {current && apply.isError && <Text size="sm" c="red">{(apply.error as Error).message}</Text>}
       {data && data.runs.length === 0 && <Text size="sm" c="dimmed">이 FMU에 성공한 run이 없습니다</Text>}
       {data && data.runs.length > 0 && (
         <>
