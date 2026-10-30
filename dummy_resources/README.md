@@ -1,6 +1,6 @@
 # Dummy resource 파일
 
-`my_0test_DriveCycleAT.fmu`의 `resources/NEDC.mat`을 일부 바꾼 테스트용 후보 파일입니다. FMU 상세 → **Resources** 탭에서 `NEDC.mat` 자리에 후보로 올려 사용합니다.
+`my_0test_DriveCycleAT.fmu`의 `resources/NEDC.mat`을 일부 바꾼 테스트용 후보 파일입니다. FMU 작업 화면의 **② 변수·리소스** 단계에서 `NEDC.mat` 자리에 후보로 올려 사용합니다.
 
 | 파일 | 변경 내용 | 최고 속도 | 평균 종방향 속도* |
 |---|---|---|---|

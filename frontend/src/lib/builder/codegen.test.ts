@@ -27,6 +27,14 @@ describe('generateCode / parseBuilderCode', () => {
   test('evaluate 함수 정의 포함', () => expect(generateCode(DEFAULT_SPEC)).toMatch(/^def evaluate\(result, params\):/m));
   test('첫 줄은 헤더 + 스펙 JSON', () =>
     expect(generateCode(SPEC_EX).split('\n')[0]).toBe(HEADER_PREFIX + JSON.stringify(SPEC_EX)));
+  test('-0 값이 있어도 새로 만든 코드는 intact (헤더 JSON은 -0을 0으로 적는다)', () => {
+    const spec: BuilderSpec = {
+      ...SPEC_EX,
+      triggers: [{ kind: 'cross', signal: 'pedal', dir: 'up', threshold: -0, occurrence: 'first' }],
+      post: { abs: false, negate: false, scale: -0 },
+    };
+    expect(parseBuilderCode(generateCode(spec))!.intact).toBe(true);
+  });
   test('같은 스펙이면 같은 코드', () => expect(generateCode(SPEC_EX)).toBe(generateCode(structuredClone(SPEC_EX))));
   test('파생식·트리거·파라미터 반영', () => {
     const c = generateCode(SPEC_EX);

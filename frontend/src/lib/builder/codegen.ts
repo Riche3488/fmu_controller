@@ -216,7 +216,8 @@ function pyLit(v: unknown): string {
   if (typeof v === 'number') {
     if (Number.isNaN(v)) return 'float("nan")';
     if (!Number.isFinite(v)) return v > 0 ? 'float("inf")' : '-float("inf")';
-    return Object.is(v, -0) ? '-0.0' : String(v);
+    // String(-0)은 '0': 헤더 JSON도 -0을 0으로 적으므로 다시 생성한 본문과 같아진다
+    return String(v);
   }
   if (typeof v === 'string') return JSON.stringify(v);
   if (Array.isArray(v)) return `[${v.map(pyLit).join(', ')}]`;
